@@ -20,7 +20,7 @@ function sudokuGame() {
         highlightedNumberCells: [],
         hintsUsed: 0,
         maxHints: 3,
-        version: '1.3.6',
+        version: '1.3.7',
 
         // PWA 更新相關
         updateAvailable: false,
