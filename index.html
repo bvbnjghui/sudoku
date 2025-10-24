@@ -123,8 +123,8 @@
             <div class="flex gap-2 mt-6">
                 <button @click="handleNumberInput(0)" title="刪除 (Backspace/Delete)" class="py-2 px-4 rounded-lg font-semibold bg-white text-red-500 shadow-md hover:bg-red-50"> 刪除 </button>
                 <button @click="pauseGame()" title="暫停 (P)" class="py-2 px-4 rounded-lg font-semibold bg-white text-gray-700 shadow-md hover:bg-gray-50"> 暫停<span class="hidden sm:inline"> (P) </span></button>
-                <button @click="isNoteMode = false" title="數字 (N)" class="py-2 px-4 rounded-lg font-semibold" :class="!isNoteMode ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'"> 數字<span class="hidden sm:inline"> (N) </span></button>
-                <button @click="isNoteMode = true" title="筆記 (N)" class="py-2 px-4 rounded-lg font-semibold" :class="isNoteMode ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'"> 筆記<span class="hidden sm:inline"> (N) </span></button>
+                <button @click="isNoteMode = false; remainSelected()" title="數字 (N)" class="py-2 px-4 rounded-lg font-semibold" :class="!isNoteMode ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'"> 數字<span class="hidden sm:inline"> (N) </span></button>
+                <button @click="isNoteMode = true; remainSelected()" title="筆記 (N)" class="py-2 px-4 rounded-lg font-semibold" :class="isNoteMode ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'"> 筆記<span class="hidden sm:inline"> (N) </span></button>
             </div>
 
             <div class="flex flex-row flex-wrap justify-center gap-2 mt-4">

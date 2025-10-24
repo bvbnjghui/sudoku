@@ -18,7 +18,7 @@ function sudokuGame() {
         maxErrors: 3,
         relatedCells: [], 
         highlightedNumberCells: [], 
-        version: '1.2.0',
+        version: '1.3.0',
 
         // PWA 更新相關
         updateAvailable: false,
@@ -78,6 +78,18 @@ function sudokuGame() {
         updatePWA() {
             if (this.registration && this.registration.waiting) {
                 this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+        },
+
+        // 確保選中的格子保持聚焦
+        remainSelected() {
+            if (this.selectedCell) {
+                setTimeout(() => {
+                    const selectedElement = document.querySelector(`[data-row="${this.selectedCell.row}"][data-col="${this.selectedCell.col}"]`);
+                    if (selectedElement) {
+                        selectedElement.focus();
+                    }
+                }, 0);
             }
         },
         saveStats() { 
