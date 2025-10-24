@@ -21,7 +21,8 @@ function sudokuGame() {
         highlightedNumberCells: [],
         hintsUsed: 0,
         maxHints: 3,
-        version: '1.3.8',
+        version: '1.3.9',
+        remainingCounts: {}, // --- 【新增】儲存剩餘數字計數
 
         // PWA 更新相關
         updateAvailable: false,
@@ -116,6 +117,24 @@ function sudokuGame() {
         toggleStats(state) { 
              this.showStats = state; if (state) { this.loadStats(); if (this.gameState === 'playing') this.stopTimer(); } else { if (this.gameState === 'playing') this.startTimer(); }
         },
+
+        // --- 【新增】計算剩餘數字 ---
+        updateRemainingCounts() {
+            const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const val = this.board[r][c].value;
+                    if (val > 0) {
+                        counts[val]++;
+                    }
+                }
+            }
+            const remaining = {};
+            for (let n = 1; n <= 9; n++) {
+                remaining[n] = 9 - counts[n];
+            }
+            this.remainingCounts = remaining;
+        },
         
         // --- 遊戲流程函式 (不變) ---
         startGame(level) { 
@@ -138,6 +157,7 @@ function sudokuGame() {
             this.board = newBoard; this.message = '遊戲開始！'; this.messageClass = 'text-blue-600';
             this.isNoteMode = false; this.selectedCell = null; this.errorCount = 0; 
             this.clearHighlights(); this.startTimer(); 
+            this.updateRemainingCounts(); // --- 【修改】更新計數
         },
         initGame() { 
             this.stats.levels[this.selectedDifficulty].played++;
@@ -220,6 +240,7 @@ function sudokuGame() {
                 this.checkSolution();
             }
 
+            this.updateRemainingCounts(); // --- 【修改】更新計數
             this.updateHighlightedNumberCells(r, c);
             this.remainSelected();
         },
@@ -367,6 +388,15 @@ function sudokuGame() {
                 } else { // Enter number 1-9
                     if (oldValue === num) return;
 
+                    // --- 【修改】檢查剩餘數量 ---
+                    if (this.remainingCounts[num] === 0) {
+                        this.message = `數字 ${num} 已經放滿了`; this.messageClass = 'text-orange-600';
+                        setTimeout(() => { if (this.message === `數字 ${num} 已經放滿了`) { this.message = ''; this.messageClass = ''; } }, 1500);
+                        this.remainSelected();
+                        return;
+                    }
+                    // --- 【修改】結束 ---
+
                     cell.value = num;
                     cell.notes = Array(9).fill(false);
 
@@ -411,6 +441,7 @@ function sudokuGame() {
                 }
             }
 
+            this.updateRemainingCounts(); // --- 【修改】更新計數
             this.updateHighlightedNumberCells(row, col);
 
             // 確保焦點回到當前選中的格子
@@ -432,6 +463,7 @@ function sudokuGame() {
         showSolution() { 
              this.stopTimer(); if (this.gameState === 'playing') { this.recordGame('lost'); this.stats.currentStreak = 0; this.saveStats(); } this.gameState = 'gameOver'; this.clearHighlights(); 
              for (let r = 0; r < 9; r++) { for (let c = 0; c < 9; c++) { const index = r * 9 + c; const solutionVal = parseInt(this.currentSolutionString[index]); const isGiven = (this.currentPuzzleString[index] !== '.'); this.board[r][c].value = solutionVal; this.board[r][c].isGiven = isGiven; this.board[r][c].isError = false; this.board[r][c].notes = Array(9).fill(false); this.board[r][c].isLocked = true; } }
+             this.updateRemainingCounts(); // --- 【修改】更新計數
              this.message = '已顯示解答。'; this.messageClass = 'text-blue-600';
         },
 

@@ -136,8 +136,27 @@
             </div>
 
             <div class="flex flex-row flex-wrap justify-center gap-2 mt-4">
-                 <template x-for="n in 9" :key="n"> <button @click="handleNumberInput(n)" class="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg shadow text-blue-600 text-xl sm:text-2xl font-bold hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400"> <span x-text="n"></span> </button> </template> </div>
-
+                 <template x-for="n in 9" :key="n"> 
+                    <button @click="handleNumberInput(n)" 
+                            class="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg shadow hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            :class="{ 
+                                'text-gray-300': remainingCounts[n] === 0, 
+                                'text-blue-600': remainingCounts[n] > 0 
+                            }">
+                        <div class="flex flex-col items-center justify-center -mt-1">
+                            <span class="text-xl sm:text-2xl font-bold" x-text="n"></span>
+                            <span x-show="remainingCounts[n] > 0"
+                                  x-text="remainingCounts[n]"
+                                  class="text-[10px] sm:text-xs font-medium text-gray-400 -mt-1">
+                            </span>
+                            <span x-show="remainingCounts[n] === 0"
+                                  class="text-[10px] sm:text-xs font-medium text-transparent -mt-1">
+                                0
+                            </span>
+                        </div>
+                    </button>
+                </template> 
+            </div>
             <div class="flex flex-wrap justify-center gap-4 mt-6">
                 <button @click="toggleStats(true)" class="py-2 px-5 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition"> 遊玩紀錄 </button>
                 <button @click="restartGame()" class="py-2 px-5 bg-orange-500 text-white font-semibold rounded-lg shadow-md hover:bg-orange-600 transition"> 重啟遊戲 </button>
