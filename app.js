@@ -21,8 +21,8 @@ function sudokuGame() {
         highlightedNumberCells: [],
         hintsUsed: 0,
         maxHints: 3,
-        version: '1.3.9',
-        remainingCounts: {}, // --- 【新增】儲存剩餘數字計數
+        version: '1.4.0',
+        remainingCounts: {}, 
 
         // PWA 更新相關
         updateAvailable: false,
@@ -240,7 +240,7 @@ function sudokuGame() {
                 this.checkSolution();
             }
 
-            this.updateRemainingCounts(); // --- 【修改】更新計數
+            this.updateRemainingCounts(); 
             this.updateHighlightedNumberCells(r, c);
             this.remainSelected();
         },
@@ -289,11 +289,32 @@ function sudokuGame() {
             return this.highlightedNumberCells.some(cell => cell.r === r && cell.c === c);
         },
 
+        // --- 【新增】檢查筆記是否需要反白 ---
+        isNoteHighlighted(n) {
+            // 只有在遊戲進行中且有選中格子時才檢查
+            if (this.gameState !== 'playing' && this.gameState !== 'won') return false;
+            if (!this.selectedCell) return false;
+
+            // 獲取選中格子的數字
+            const selectedValue = this.board[this.selectedCell.row][this.selectedCell.col].value;
+            
+            // 如果選中的是空格子 (value=0)，則不反白任何筆記
+            if (selectedValue === 0) return false;
+            
+            // 如果筆記數字 n 與選中的數字相同，則反白
+            return n === selectedValue;
+        },
+        // --- 【新增】結束 ---
+
         updateHighlightedNumberCells(r, c) {
             this.highlightedNumberCells = []; 
             if (!this.selectedCell || this.gameState === 'menu' || this.gameState === 'paused') return;
             const selectedValue = this.board[r][c].value;
+            
+            // 如果點擊的是空格 (value=0)，就清除反白並返回
             if (selectedValue === 0) return; 
+            
+            // 遍歷棋盤，只反白數字 (value) 相同的格子
             for (let rr = 0; rr < 9; rr++) {
                 for (let cc = 0; cc < 9; cc++) {
                     if (this.board[rr][cc].value === selectedValue) {
@@ -441,7 +462,7 @@ function sudokuGame() {
                 }
             }
 
-            this.updateRemainingCounts(); // --- 【修改】更新計數
+            this.updateRemainingCounts(); 
             this.updateHighlightedNumberCells(row, col);
 
             // 確保焦點回到當前選中的格子
@@ -463,7 +484,7 @@ function sudokuGame() {
         showSolution() { 
              this.stopTimer(); if (this.gameState === 'playing') { this.recordGame('lost'); this.stats.currentStreak = 0; this.saveStats(); } this.gameState = 'gameOver'; this.clearHighlights(); 
              for (let r = 0; r < 9; r++) { for (let c = 0; c < 9; c++) { const index = r * 9 + c; const solutionVal = parseInt(this.currentSolutionString[index]); const isGiven = (this.currentPuzzleString[index] !== '.'); this.board[r][c].value = solutionVal; this.board[r][c].isGiven = isGiven; this.board[r][c].isError = false; this.board[r][c].notes = Array(9).fill(false); this.board[r][c].isLocked = true; } }
-             this.updateRemainingCounts(); // --- 【修改】更新計數
+             this.updateRemainingCounts(); 
              this.message = '已顯示解答。'; this.messageClass = 'text-blue-600';
         },
 

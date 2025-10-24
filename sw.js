@@ -1,5 +1,5 @@
 // sw.js
-const CACHE_NAME = 'sudoku-cache-v1.3.9'; // 每次更新資源時，記得修改版本號！
+const CACHE_NAME = 'sudoku-cache-v1.4.0'; // 每次更新資源時，記得修改版本號！
 const urlsToCache = [
   '.', // 代表根目錄，通常是 index.html
   'index.html',
