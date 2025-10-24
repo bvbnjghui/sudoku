@@ -19,7 +19,8 @@ function sudokuGame() {
         relatedCells: [],
         highlightedNumberCells: [],
         hintsUsed: 0,
-        version: '1.3.4',
+        maxHints: 3,
+        version: '1.3.5',
 
         // PWA 更新相關
         updateAvailable: false,
@@ -148,8 +149,18 @@ function sudokuGame() {
              this.hintsUsed = 0; this.buildBoard(); this.gameState = 'playing';
          },
 
+        getRemainingHints() {
+            return Math.max(0, this.maxHints - this.hintsUsed);
+        },
+
         useHint() {
             if (this.gameState !== 'playing') return;
+
+            if (this.getRemainingHints() <= 0) {
+                this.message = '提示次數已用完'; this.messageClass = 'text-red-600';
+                setTimeout(() => { if (this.message === '提示次數已用完') { this.message = ''; this.messageClass = ''; } }, 2000);
+                return;
+            }
 
             // 找到所有空的格子
             const emptyCells = [];
