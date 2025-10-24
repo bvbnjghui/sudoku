@@ -20,7 +20,7 @@ function sudokuGame() {
         highlightedNumberCells: [],
         hintsUsed: 0,
         maxHints: 3,
-        version: '1.3.5',
+        version: '1.3.6',
 
         // PWA 更新相關
         updateAvailable: false,
@@ -161,6 +161,9 @@ function sudokuGame() {
                 setTimeout(() => { if (this.message === '提示次數已用完') { this.message = ''; this.messageClass = ''; } }, 2000);
                 return;
             }
+
+            // 確認是否使用提示
+            if (!confirm('確定要使用提示嗎？')) return;
 
             // 找到所有空的格子
             const emptyCells = [];
