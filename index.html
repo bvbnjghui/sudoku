@@ -73,14 +73,17 @@
                                     relative cursor-pointer transition-colors duration-150 aspect-square" :class="{
                                  'border-r-2 border-gray-800': colIndex === 2 || colIndex === 5,
                                  'border-b-2 border-gray-800': rowIndex === 3 || rowIndex === 6,
-                                 'bg-blue-100': isSelected(rowIndex, colIndex), 
+                                 'bg-blue-100': isSelected(rowIndex, colIndex),
                                  'bg-blue-200': isHighlightedNumber(rowIndex, colIndex) && !isSelected(rowIndex, colIndex),
                                  'bg-blue-50': isRelated(rowIndex, colIndex) && !isSelected(rowIndex, colIndex) && !isHighlightedNumber(rowIndex, colIndex),
                                  'bg-white': !isSelected(rowIndex, colIndex) && !isRelated(rowIndex, colIndex) && !isHighlightedNumber(rowIndex, colIndex),
-                                 'ring-2 ring-blue-600 ring-inset z-10': isSelected(rowIndex, colIndex), 
+                                 'ring-2 ring-blue-600 ring-inset z-10': isSelected(rowIndex, colIndex),
                                  'cursor-default': cell.isGiven || cell.isLocked,
                              }"
                              @click="handleCellClick(rowIndex, colIndex)"
+                             :data-row="rowIndex"
+                             :data-col="colIndex"
+                             tabindex="-1"
                         >
                             <template x-if="cell.value !== 0">
                                 <span class="text-xl sm:text-2xl font-bold"

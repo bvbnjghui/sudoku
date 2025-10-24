@@ -18,7 +18,7 @@ function sudokuGame() {
         maxErrors: 3,
         relatedCells: [], 
         highlightedNumberCells: [], 
-        version: '1.1.0',
+        version: '1.2.0',
         
         getDefaultStats() { 
             return { currentStreak: 0, bestStreak: 0, levels: {'easy': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'medium': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'hard': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'very-hard': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'insane': { played: 0, won: 0, bestTime: null, totalTime: 0 }, }, recentGames: [] }
@@ -141,7 +141,7 @@ function sudokuGame() {
             }
         },
         
-        getPeers(r, c) { 
+        getPeers(r, c) {
             const peers = []; const peerSet = new Set();
             for (let col = 0; col < 9; col++) if (col !== c) peerSet.add(`${r}-${col}`);
             for (let row = 0; row < 9; row++) if (row !== r) peerSet.add(`${row}-${c}`);
@@ -194,27 +194,28 @@ function sudokuGame() {
         },
 
         // 【修改】
-        handleNumberInput(num) { 
-            if (this.gameState !== 'playing' || !this.selectedCell) return; 
+        handleNumberInput(num) {
+            if (this.gameState !== 'playing' || !this.selectedCell) return;
             const { row, col } = this.selectedCell;
             const cell = this.board[row][col];
-            
-            if (cell.isGiven || cell.isLocked) return; 
-            
+
+            if (cell.isGiven || cell.isLocked) return;
+
             const oldValue = cell.value;
 
             if (this.isNoteMode) {
                 // --- 筆記模式 ---
-                if (num === 0) { 
+                if (num === 0) {
                     cell.notes = Array(9).fill(false);
                     if (oldValue !== 0) { cell.value = 0; cell.isError = false; }
-                } else { 
+                } else {
                     if (this.hasNoteConflict(row, col, num)) {
                         this.message = `筆記 ${num} 與已有數字衝突`; this.messageClass = 'text-orange-600';
                         setTimeout(() => { if (this.message === `筆記 ${num} 與已有數字衝突`) { this.message = ''; this.messageClass = ''; } }, 1500);
-                        return; 
+                        this.remainSelected(row, col);
+                        return;
                     }
-                    const newNotes = [...cell.notes]; newNotes[num - 1] = !newNotes[num - 1]; cell.notes = newNotes; 
+                    const newNotes = [...cell.notes]; newNotes[num - 1] = !newNotes[num - 1]; cell.notes = newNotes;
                     if (oldValue !== 0) { cell.value = 0; cell.isError = false; }
                 }
 
@@ -223,19 +224,19 @@ function sudokuGame() {
                 if (num === 0) { // Delete number
                     if (oldValue !== 0) { cell.value = 0; cell.isError = false; }
                 } else { // Enter number 1-9
-                    if (oldValue === num) return; 
+                    if (oldValue === num) return;
 
                     cell.value = num;
-                    cell.notes = Array(9).fill(false); 
+                    cell.notes = Array(9).fill(false);
 
                     const index = row * 9 + col;
                     const correctVal = parseInt(this.currentSolutionString[index]);
 
                     if (num === correctVal) {
                         // --- 正確答案 ---
-                        cell.isLocked = true; 
-                        cell.isError = false; 
-                        
+                        cell.isLocked = true;
+                        cell.isError = false;
+
                         // 【新增】清除 Peers 中衝突的筆記
                         const peers = this.getPeers(row, col);
                         peers.forEach(peer => {
@@ -243,34 +244,36 @@ function sudokuGame() {
                             if (peerCell.notes[num - 1]) { // 如果 peer 有這個數字的筆記
                                 const newNotes = [...peerCell.notes];
                                 newNotes[num - 1] = false;
-                                peerCell.notes = newNotes; 
+                                peerCell.notes = newNotes;
                             }
                         });
 
                     } else {
                         // --- 錯誤答案 ---
-                        cell.isLocked = false; 
-                        cell.isError = true; 
-                        this.errorCount++; 
-                             
+                        cell.isLocked = false;
+                        cell.isError = true;
+                        this.errorCount++;
+
                         if (this.errorCount >= this.maxErrors) {
                             this.stopTimer(); this.gameState = 'gameOver';
                             this.message = '錯誤次數過多，遊戲失敗！'; this.messageClass = 'text-red-600';
                             this.recordGame('lost'); this.saveStats();
                             this.selectedCell = null; this.clearHighlights();
-                            return; 
+                            return;
                         }
                     }
                 }
-                
                 // 檢查棋盤是否已滿
                 const isBoardFull = this.board.every(r => r.every(c => c.value !== 0));
                 if (isBoardFull) {
                     this.checkSolution(); // 自動檢查
                 }
             }
-            
-            this.updateHighlightedNumberCells(row, col); 
+
+            this.updateHighlightedNumberCells(row, col);
+
+            // 確保焦點回到當前選中的格子
+            this.remainSelected(row, col);
         },
         
         // --- 檢查和解答函式 (不變) ---
@@ -289,6 +292,15 @@ function sudokuGame() {
              this.stopTimer(); if (this.gameState === 'playing') { this.recordGame('lost'); this.stats.currentStreak = 0; this.saveStats(); } this.gameState = 'gameOver'; this.clearHighlights(); 
              for (let r = 0; r < 9; r++) { for (let c = 0; c < 9; c++) { const index = r * 9 + c; const solutionVal = parseInt(this.currentSolutionString[index]); const isGiven = (this.currentPuzzleString[index] !== '.'); this.board[r][c].value = solutionVal; this.board[r][c].isGiven = isGiven; this.board[r][c].isError = false; this.board[r][c].notes = Array(9).fill(false); this.board[r][c].isLocked = true; } }
              this.message = '已顯示解答。'; this.messageClass = 'text-blue-600';
+        },
+
+        remainSelected(row, col){
+            setTimeout(() => {
+                const selectedElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                if (selectedElement) {
+                    selectedElement.click();
+                }
+            }, 0);
         }
     } 
 }
