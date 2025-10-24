@@ -78,6 +78,8 @@ function sudokuGame() {
         updatePWA() {
             if (this.registration && this.registration.waiting) {
                 this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                // 重新載入頁面以應用更新
+                window.location.reload();
             }
         },
 
