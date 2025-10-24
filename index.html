@@ -39,10 +39,10 @@
             <div class="text-center"> <h2 class="text-5xl font-bold text-white mb-8">已暫停</h2> <button @click="resumeGame()" class="py-3 px-10 rounded-lg font-semibold text-2xl bg-white text-blue-600 shadow-md hover:bg-gray-100 transition"> 繼續遊戲 </button> </div>
         </div>
         
-        <div x-show="gameState === 'gameOver'" 
+        <div x-show="gameState === 'gameOver'"
              x-transition
              class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-40">
-             <div class="bg-white rounded-lg shadow-xl p-8 text-center"> <h2 class="text-3xl font-bold text-red-600 mb-4">遊戲失敗</h2> <p class="text-lg text-gray-700 mb-6" x-text="message"></p> <button @click="onNewGameClick()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition"> 返回選單 </button> </div>
+             <div class="bg-white rounded-lg shadow-xl p-8 text-center"> <h2 class="text-3xl font-bold text-red-600 mb-4">遊戲失敗</h2> <p class="text-lg text-gray-700 mb-6" x-text="message"></p> <div class="flex gap-4 justify-center"> <button @click="restartGame()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition"> 重開遊戲 </button> <button @click="onNewGameClick()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition"> 返回選單 </button> </div> </div>
         </div>
 
 

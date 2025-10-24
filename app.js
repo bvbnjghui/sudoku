@@ -18,7 +18,7 @@ function sudokuGame() {
         maxErrors: 3,
         relatedCells: [], 
         highlightedNumberCells: [], 
-        version: '1.3.2',
+        version: '1.3.3',
 
         // PWA 更新相關
         updateAvailable: false,
