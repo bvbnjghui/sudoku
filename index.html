@@ -54,6 +54,7 @@
                     <span> / </span>
                     <span x-text="maxErrors" class="ml-1"></span>
                 </div>
+                <button @click="pauseGame()" title="暫停 (P)" class="py-2 px-4 rounded-lg font-semibold bg-white text-gray-700 shadow-md hover:bg-gray-50"> 暫停<span class="hidden sm:inline"> (P) </span></button>
                 <div class="flex">
                     <span>時間: </span>
                     <span x-text="formatTime(timer)" class="font-bold text-blue-600 w-16 text-right ml-2"></span>
@@ -122,7 +123,6 @@
             
             <div class="flex gap-2 mt-6">
                 <button @click="handleNumberInput(0)" title="刪除 (Backspace/Delete)" class="py-2 px-4 rounded-lg font-semibold bg-white text-red-500 shadow-md hover:bg-red-50"> 刪除 </button>
-                <button @click="pauseGame()" title="暫停 (P)" class="py-2 px-4 rounded-lg font-semibold bg-white text-gray-700 shadow-md hover:bg-gray-50"> 暫停<span class="hidden sm:inline"> (P) </span></button>
                 <button @click="useHint()" title="提示" class="py-2 px-4 rounded-lg font-semibold" :class="getRemainingHints() > 0 ? 'bg-yellow-500 text-white shadow-md hover:bg-yellow-600' : 'bg-gray-400 text-gray-600 cursor-not-allowed'"> 提示 (<span x-text="getRemainingHints()"></span>) </button>
                 <button @click="isNoteMode = false; remainSelected()" title="數字 (N)" class="py-2 px-4 rounded-lg font-semibold" :class="!isNoteMode ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'"> 數字<span class="hidden sm:inline"> (N) </span></button>
                 <button @click="isNoteMode = true; remainSelected()" title="筆記 (N)" class="py-2 px-4 rounded-lg font-semibold" :class="isNoteMode ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'"> 筆記<span class="hidden sm:inline"> (N) </span></button>
