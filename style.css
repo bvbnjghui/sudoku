@@ -1,0 +1,29 @@
+/* 隱藏數字輸入框的上下箭頭 (雖然這個專案沒用到 input，但保留是好習慣) */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* 筆記模式的小格子 */
+.note-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    width: 100%;
+    height: 100%;
+    font-size: 10px; /* 筆記數字大小 */
+    line-height: 1.1;
+    color: #6b7280; /* 筆記數字顏色 */
+    text-align: center;
+    pointer-events: none; /* 讓點擊穿透到外層 div */
+}
+
+.note-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
