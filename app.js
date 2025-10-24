@@ -16,9 +16,10 @@ function sudokuGame() {
         gameState: 'menu', 
         showStats: false,
         maxErrors: 3,
-        relatedCells: [], 
-        highlightedNumberCells: [], 
-        version: '1.3.3',
+        relatedCells: [],
+        highlightedNumberCells: [],
+        hintsUsed: 0,
+        version: '1.3.4',
 
         // PWA 更新相關
         updateAvailable: false,
@@ -143,8 +144,65 @@ function sudokuGame() {
                 this.buildBoard(); 
             } catch (e) { console.error("生成數獨時發生錯誤:", e); this.message = '載入謎題失敗，請重試。'; this.messageClass = 'text-red-600'; }
         },
-        restartGame() { 
-             this.buildBoard(); this.gameState = 'playing'; 
+        restartGame() {
+             this.hintsUsed = 0; this.buildBoard(); this.gameState = 'playing';
+         },
+
+        useHint() {
+            if (this.gameState !== 'playing') return;
+
+            // 找到所有空的格子
+            const emptyCells = [];
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (this.board[r][c].value === 0 && !this.board[r][c].isGiven) {
+                        emptyCells.push({ r, c });
+                    }
+                }
+            }
+
+            if (emptyCells.length === 0) {
+                this.message = '沒有空的格子可以使用提示'; this.messageClass = 'text-yellow-600';
+                setTimeout(() => { if (this.message === '沒有空的格子可以使用提示') { this.message = ''; this.messageClass = ''; } }, 2000);
+                return;
+            }
+
+            // 隨機選擇一個空的格子
+            const randomIndex = Math.floor(Math.random() * emptyCells.length);
+            const { r, c } = emptyCells[randomIndex];
+
+            // 填入正確答案
+            const index = r * 9 + c;
+            const correctVal = parseInt(this.currentSolutionString[index]);
+
+            this.board[r][c].value = correctVal;
+            this.board[r][c].isLocked = true;
+            this.board[r][c].notes = Array(9).fill(false);
+
+            this.hintsUsed++;
+
+            // 清除 Peers 中衝突的筆記
+            const peers = this.getPeers(r, c);
+            peers.forEach(peer => {
+                const peerCell = this.board[peer.r][peer.c];
+                if (peerCell.notes[correctVal - 1]) {
+                    const newNotes = [...peerCell.notes];
+                    newNotes[correctVal - 1] = false;
+                    peerCell.notes = newNotes;
+                }
+            });
+
+            this.message = `使用了提示！`; this.messageClass = 'text-blue-600';
+            setTimeout(() => { if (this.message === '使用了提示！') { this.message = ''; this.messageClass = ''; } }, 1500);
+
+            // 檢查棋盤是否已滿
+            const isBoardFull = this.board.every(row => row.every(cell => cell.value !== 0));
+            if (isBoardFull) {
+                this.checkSolution();
+            }
+
+            this.updateHighlightedNumberCells(r, c);
+            this.remainSelected();
         },
         onNewGameClick() { 
              if (this.gameState === 'playing' || this.gameState === 'gameOver') { this.recordGame('lost'); this.stats.currentStreak = 0; }
