@@ -18,7 +18,7 @@ function sudokuGame() {
         maxErrors: 3,
         relatedCells: [], 
         highlightedNumberCells: [], 
-        version: '1.3.1',
+        version: '1.3.2',
 
         // PWA 更新相關
         updateAvailable: false,
@@ -84,12 +84,7 @@ function sudokuGame() {
         // 確保選中的格子保持聚焦
         remainSelected() {
             if (this.selectedCell) {
-                setTimeout(() => {
-                    const selectedElement = document.querySelector(`[data-row="${this.selectedCell.row}"][data-col="${this.selectedCell.col}"]`);
-                    if (selectedElement) {
-                        selectedElement.focus();
-                    }
-                }, 0);
+                this.setSelected(this.selectedCell.row, this.selectedCell.col);
             }
         },
 
@@ -275,7 +270,7 @@ function sudokuGame() {
                     if (this.hasNoteConflict(row, col, num)) {
                         this.message = `筆記 ${num} 與已有數字衝突`; this.messageClass = 'text-orange-600';
                         setTimeout(() => { if (this.message === `筆記 ${num} 與已有數字衝突`) { this.message = ''; this.messageClass = ''; } }, 1500);
-                        this.remainSelected(row, col);
+                        this.remainSelected();
                         return;
                     }
                     const newNotes = [...cell.notes]; newNotes[num - 1] = !newNotes[num - 1]; cell.notes = newNotes;
@@ -336,7 +331,7 @@ function sudokuGame() {
             this.updateHighlightedNumberCells(row, col);
 
             // 確保焦點回到當前選中的格子
-            this.remainSelected(row, col);
+            this.remainSelected();
         },
         
         // --- 檢查和解答函式 (不變) ---
@@ -357,7 +352,7 @@ function sudokuGame() {
              this.message = '已顯示解答。'; this.messageClass = 'text-blue-600';
         },
 
-        remainSelected(row, col){
+        setSelected(row, col){
             setTimeout(() => {
                 const selectedElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
                 if (selectedElement) {
