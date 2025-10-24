@@ -138,7 +138,7 @@
     </div> <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js') // 確保路徑正確
+          navigator.serviceWorker.register('https://bvbnjghui.github.io/sudoku/sw.js') // 確保路徑正確
             .then(registration => {
               console.log('ServiceWorker registration successful with scope: ', registration.scope);
             })
