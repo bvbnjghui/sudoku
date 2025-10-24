@@ -92,6 +92,18 @@ function sudokuGame() {
                 }, 0);
             }
         },
+
+        // 將難度英文轉換為中文
+        getDifficultyText(difficulty) {
+            const difficultyMap = {
+                'easy': '簡單',
+                'medium': '中等',
+                'hard': '困難',
+                'very-hard': '極難',
+                'insane': '瘋狂'
+            };
+            return difficultyMap[difficulty] || difficulty;
+        },
         saveStats() { 
             localStorage.setItem('sudokuStats', JSON.stringify(this.stats));
         },
