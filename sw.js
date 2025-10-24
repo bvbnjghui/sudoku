@@ -43,6 +43,13 @@ self.addEventListener('activate', event => {
   );
 });
 
+// 監聽訊息事件，用於通知用戶有更新
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // 攔截網路請求，優先從快取提供資源
 self.addEventListener('fetch', event => {
   // 對於非 GET 請求或非 http/https 協議的請求，直接使用網路

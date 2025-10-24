@@ -22,9 +22,9 @@
 
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen font-sans py-10">
 
-    <div x-data="sudokuGame()" x-init="loadStats()" 
-         @keydown.window="handleKeydown($event)" 
-         class="flex flex-col items-center px-4 w-full" >
+    <div x-data="sudokuGame()" x-init="loadStats(); checkForUpdates()"
+          @keydown.window="handleKeydown($event)"
+          class="flex flex-col items-center px-4 w-full" >
 
         <div x-show="gameState === 'menu'" 
              x-transition 
@@ -58,7 +58,19 @@
                     <span>時間: </span>
                     <span x-text="formatTime(timer)" class="font-bold text-blue-600 w-16 text-right ml-2"></span>
                 </div>
-            </div>
+            </div> <script>
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                      console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                      console.log('ServiceWorker registration failed: ', error);
+                    });
+                });
+              }
+            </script>
 
             <div class="grid grid-cols-9
                         border-2 border-gray-800
@@ -136,20 +148,13 @@
         
         <footer class="text-center text-gray-500 text-sm mt-8">
             版本 <span x-text="version"></span>
+            <div x-show="updateAvailable" class="mt-2">
+                <button @click="updatePWA()" class="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 transition">
+                    有新版本可用，點擊更新
+                </button>
+            </div>
         </footer>
 
-    </div> <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('https://bvbnjghui.github.io/sudoku/sw.js') // 確保路徑正確
-            .then(registration => {
-              console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            })
-            .catch(error => {
-              console.log('ServiceWorker registration failed: ', error);
-            });
-        });
-      }
-    </script>
+    </div>
 </body>
 </html>

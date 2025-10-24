@@ -19,6 +19,10 @@ function sudokuGame() {
         relatedCells: [], 
         highlightedNumberCells: [], 
         version: '1.2.0',
+
+        // PWA 更新相關
+        updateAvailable: false,
+        registration: null,
         
         getDefaultStats() { 
             return { currentStreak: 0, bestStreak: 0, levels: {'easy': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'medium': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'hard': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'very-hard': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'insane': { played: 0, won: 0, bestTime: null, totalTime: 0 }, }, recentGames: [] }
@@ -38,8 +42,43 @@ function sudokuGame() {
         stopTimer() { 
             if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
         },
-        loadStats() { 
-             const storedStats = localStorage.getItem('sudokuStats'); const defaultStats = this.getDefaultStats(); if (storedStats) { const parsedStats = JSON.parse(storedStats); this.stats = { ...defaultStats, ...parsedStats, levels: { ...defaultStats.levels, ...(parsedStats.levels || {}) }, recentGames: parsedStats.recentGames || [] }; } else { this.stats = defaultStats; }
+        loadStats() {
+              const storedStats = localStorage.getItem('sudokuStats'); const defaultStats = this.getDefaultStats(); if (storedStats) { const parsedStats = JSON.parse(storedStats); this.stats = { ...defaultStats, ...parsedStats, levels: { ...defaultStats.levels, ...(parsedStats.levels || {}) }, recentGames: parsedStats.recentGames || [] }; } else { this.stats = defaultStats; }
+        },
+
+        // 檢查 PWA 更新
+        checkForUpdates() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        this.registration = registration;
+
+                        // 檢查是否有新的 Service Worker 在等待
+                        if (registration.waiting) {
+                            this.updateAvailable = true;
+                        }
+
+                        // 監聽新的 Service Worker 安裝完成
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    this.updateAvailable = true;
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            }
+        },
+
+        // 更新 PWA
+        updatePWA() {
+            if (this.registration && this.registration.waiting) {
+                this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
         },
         saveStats() { 
             localStorage.setItem('sudokuStats', JSON.stringify(this.stats));
