@@ -32,11 +32,18 @@
            <div class="text-center"> <h1 class="text-5xl font-bold text-gray-800 mb-10">數獨遊戲</h1> <h2 class="text-2xl font-semibold text-gray-700 mb-6">請選擇難度</h2> <div class="grid grid-cols-1 gap-4 w-64"> <button @click="startGame('easy')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-500 text-white shadow-md hover:bg-blue-600 transition">簡單</button> <button @click="startGame('medium')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition">中等</button> <button @click="startGame('hard')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-700 text-white shadow-md hover:bg-blue-800 transition">困難</button> <button @click="startGame('very-hard')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-gray-600 text-white shadow-md hover:bg-gray-700 transition">極難</button> <button @click="startGame('insane')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-gray-800 text-white shadow-md hover:bg-black transition">瘋狂</button> <button @click="toggleStats(true)" class="py-3 px-6 rounded-lg font-semibold text-lg bg-purple-600 text-white shadow-md hover:bg-purple-700 transition mt-8"> 查看遊玩紀錄 </button> </div> </div>
         </div>
 
-        <div x-show="gameState === 'paused'" 
+        <div x-show="gameState === 'paused'"
              x-transition
              class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-40"
              @click.self="resumeGame()">
             <div class="text-center"> <h2 class="text-5xl font-bold text-white mb-8">已暫停</h2> <button @click="resumeGame()" class="py-3 px-10 rounded-lg font-semibold text-2xl bg-white text-blue-600 shadow-md hover:bg-gray-100 transition"> 繼續遊戲 </button> </div>
+        </div>
+
+        <div x-show="showHintConfirm"
+             x-transition
+             class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-40"
+             @click.self="cancelUseHint()">
+            <div class="text-center"> <h2 class="text-3xl font-bold text-white mb-6">確定要使用提示嗎？</h2> <div class="flex gap-4 justify-center"> <button @click="confirmUseHint()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition"> 確定 </button> <button @click="cancelUseHint()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-gray-600 text-white shadow-md hover:bg-gray-700 transition"> 取消 </button> </div> </div>
         </div>
         
         <div x-show="gameState === 'gameOver'"
@@ -74,8 +81,8 @@
             </script>
 
             <div class="grid grid-cols-9
-                        border-2 border-gray-800
-                        shadow-lg w-full aspect-square" :class="{ 'opacity-50 blur-sm pointer-events-none': gameState === 'paused' || gameState === 'gameOver' }"
+                       border-2 border-gray-800
+                       shadow-lg w-full aspect-square" :class="{ 'opacity-50 blur-sm pointer-events-none': gameState === 'paused' || gameState === 'gameOver' || showHintConfirm }"
                  @click.away="selectedCell = null; clearHighlights()"
             >
                 <template x-for="(row, rowIndex) in board" :key="rowIndex">

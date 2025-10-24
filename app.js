@@ -13,14 +13,15 @@ function sudokuGame() {
         errorCount: 0,
         timer: 0,
         timerInterval: null,
-        gameState: 'menu', 
+        gameState: 'menu',
         showStats: false,
+        showHintConfirm: false,
         maxErrors: 3,
         relatedCells: [],
         highlightedNumberCells: [],
         hintsUsed: 0,
         maxHints: 3,
-        version: '1.3.7',
+        version: '1.3.8',
 
         // PWA 更新相關
         updateAvailable: false,
@@ -162,8 +163,12 @@ function sudokuGame() {
                 return;
             }
 
-            // 確認是否使用提示
-            if (!confirm('確定要使用提示嗎？')) return;
+            // 顯示確認視窗
+            this.showHintConfirm = true;
+        },
+
+        confirmUseHint() {
+            this.showHintConfirm = false;
 
             // 找到所有空的格子
             const emptyCells = [];
@@ -217,6 +222,10 @@ function sudokuGame() {
 
             this.updateHighlightedNumberCells(r, c);
             this.remainSelected();
+        },
+
+        cancelUseHint() {
+            this.showHintConfirm = false;
         },
         onNewGameClick() { 
              if (this.gameState === 'playing' || this.gameState === 'gameOver') { this.recordGame('lost'); this.stats.currentStreak = 0; }
