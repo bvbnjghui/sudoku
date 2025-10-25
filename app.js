@@ -44,7 +44,7 @@ function sudokuGame() {
         gameState: 'menu',
         showStats: false,
         showHintConfirm: false,
-        maxErrors: 3,
+        maxErrors: 5,
         relatedCells: [],
         highlightedNumberCells: [],
         hintsUsed: 0,
