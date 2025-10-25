@@ -49,7 +49,7 @@ function sudokuGame() {
         highlightedNumberCells: [],
         hintsUsed: 0,
         maxHints: 3, // 遊戲中實際的提示上限
-        version: '1.4.5',
+        version: '1.4.6',
         remainingCounts: {}, 
         updateAvailable: false,
         registration: null,
@@ -130,10 +130,7 @@ function sudokuGame() {
             }
         },
         updatePWA() {
-            if (this.registration && this.registration.waiting) {
-                this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                window.location.reload();
-            }
+            window.location.reload();
         },
         remainSelected() {
             if (this.selectedCell) {
