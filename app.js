@@ -53,7 +53,7 @@ function sudokuGame() {
         highlightedNumberCells: [],
         hintsUsed: 0,
         maxHints: 3,
-        version: '1.4.0',
+        version: '1.4.2',
         remainingCounts: {}, 
         updateAvailable: false,
         registration: null,
