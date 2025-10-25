@@ -49,7 +49,7 @@ function sudokuGame() {
         highlightedNumberCells: [],
         hintsUsed: 0,
         maxHints: 3, // 遊戲中實際的提示上限
-        version: '1.4.6',
+        version: '1.4.7',
         remainingCounts: {}, 
         updateAvailable: false,
         registration: null,
@@ -85,7 +85,7 @@ function sudokuGame() {
         },
         
         getDefaultStats() { 
-            return { currentStreak: 0, bestStreak: 0, levels: {'easy': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'medium': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'hard': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'very-hard': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'insane': { played: 0, won: 0, bestTime: null, totalTime: 0 }, }, recentGames: [] }
+            return { currentStreak: 0, bestStreak: 0, levels: {'easy': { played: 0, won: 0, bestTime: null, totalTime: 0, totalHints: 0 }, 'medium': { played: 0, won: 0, bestTime: null, totalTime: 0, totalHints: 0 }, 'hard': { played: 0, won: 0, bestTime: null, totalTime: 0, totalHints: 0 }, 'very-hard': { played: 0, won: 0, bestTime: null, totalTime: 0, totalHints: 0 }, 'insane': { played: 0, won: 0, bestTime: null, totalTime: 0, totalHints: 0 }, }, recentGames: [] }
         },
         stats: {}, 
 
@@ -152,7 +152,7 @@ function sudokuGame() {
             localStorage.setItem('sudokuStats', JSON.stringify(this.stats));
         },
         recordGame(status) { 
-             if (this.timer === 0 && status === 'lost') return; const gameRecord = { date: new Date().toISOString(), difficulty: this.selectedDifficulty, time: this.timer, status: status, errors: this.errorCount }; this.stats.recentGames.unshift(gameRecord); if (this.stats.recentGames.length > 10) this.stats.recentGames.pop(); 
+             if (this.timer === 0 && status === 'lost') return; const gameRecord = { date: new Date().toISOString(), difficulty: this.selectedDifficulty, time: this.timer, status: status, errors: this.errorCount, hints: this.hintsUsed }; this.stats.recentGames.unshift(gameRecord); if (this.stats.recentGames.length > 10) this.stats.recentGames.pop(); 
         },
         clearStats() { 
             if (confirm(this.t('confirmClearStats'))) { 
@@ -483,8 +483,8 @@ function sudokuGame() {
                 if (isComplete && !hasErrors) { 
                     this.stopTimer(); this.gameState = 'won'; 
                     this.message = this.t('gameWonMsg', {time: this.formatTime(this.timer)}); 
-                    this.messageClass = 'text-green-600'; this.selectedCell = null; this.clearHighlights(); const stats = this.stats.levels[this.selectedDifficulty]; stats.won++; stats.totalTime += this.timer; if (stats.bestTime === null || this.timer < stats.bestTime) stats.bestTime = this.timer; this.stats.currentStreak++; if (this.stats.currentStreak > this.stats.bestStreak) this.stats.bestStreak = this.stats.currentStreak; this.recordGame('won'); this.saveStats(); 
-                } 
+                    this.messageClass = 'text-green-600'; this.selectedCell = null; this.clearHighlights(); const stats = this.stats.levels[this.selectedDifficulty]; stats.won++; stats.totalTime += this.timer; stats.totalHints += this.hintsUsed; if (stats.bestTime === null || this.timer < stats.bestTime) stats.bestTime = this.timer; this.stats.currentStreak++; if (this.stats.currentStreak > this.stats.bestStreak) this.stats.bestStreak = this.stats.currentStreak; this.recordGame('won'); this.saveStats(); 
+                }
                 else if (isComplete && hasErrors) { 
                     this.message = this.t('gameCheckDoneErrors'); 
                     this.messageClass = 'text-red-600'; 

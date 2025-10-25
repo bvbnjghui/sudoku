@@ -255,6 +255,7 @@
                                     <th class="p-3 font-semibold text-sm" x-text="t('statsWinRate')"></th>
                                     <th class="p-3 font-semibold text-sm" x-text="t('statsBestTime')"></th>
                                     <th class="p-3 font-semibold text-sm" x-text="t('statsAvgTime')"></th>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsAvgHints')"></th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
@@ -266,6 +267,7 @@
                                         <td class="p-3" x-text="stats.levels[level].played > 0 ? (stats.levels[level].won / stats.levels[level].played * 100).toFixed(0) + '%' : 'N/A'"></td>
                                         <td class="p-3" x-text="stats.levels[level].bestTime ? formatTime(stats.levels[level].bestTime) : 'N/A'"></td>
                                         <td class="p-3" x-text="stats.levels[level].won > 0 ? formatTime(stats.levels[level].totalTime / stats.levels[level].won) : 'N/A'"></td>
+                                        <td class="p-3" x-text="stats.levels[level].won > 0 ? (stats.levels[level].totalHints / stats.levels[level].won).toFixed(1) : 'N/A'"></td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -281,12 +283,13 @@
                                     <th class="p-3 font-semibold text-sm" x-text="t('statsStatus')"></th>
                                     <th class="p-3 font-semibold text-sm" x-text="t('statsTime')"></th>
                                     <th class="p-3 font-semibold text-sm" x-text="t('statsErrors')"></th>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsHints')"></th> </tr>
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
                                 <template x-if="stats.recentGames.length === 0">
                                     <tr>
-                                        <td colspan="5" class="p-4 text-center text-gray-500" x-text="t('statsNoRecord')"></td>
+                                        <td colspan="6" class="p-4 text-center text-gray-500" x-text="t('statsNoRecord')"></td>
                                     </tr>
                                 </template>
                                 <template x-for="(game, index) in stats.recentGames" :key="index">
@@ -300,6 +303,7 @@
                                         </td>
                                         <td class="p-3" x-text="formatTime(game.time)"></td>
                                         <td class="p-3" x-text="game.errors"></td>
+                                        <td class="p-3" x-text="game.hints"></td> </tr>
                                     </tr>
                                 </template>
                             </tbody>
