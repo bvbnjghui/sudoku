@@ -36,6 +36,17 @@ const translations = {
     statsButton: { zh: '遊玩紀錄', en: 'Game Stats' },
     restartGameButton: { zh: '重啟遊戲', en: 'Restart Game' },
     newGameButton: { zh: '新遊戲', en: 'New Game' },
+    
+    // --- 【*** 新增 ***】 ---
+    settingsButton: { zh: '設定', en: 'Settings' },
+    settingsTitle: { zh: '遊戲設定', en: 'Game Settings' },
+    settingsMaxErrors: { zh: "錯誤次數上限", en: "Max Errors" },
+    settingsErrorUnlimited: { zh: "無限制", en: "Unlimited" },
+    settingsMaxHints: { zh: "提示次數上限", en: "Max Hints" },
+    settingsHintsInfo: { zh: "(這將會覆蓋所有難度的預設提示次數)", en: "(This will override default hints for all difficulties)"},
+    saveButton: { zh: "儲存設定", en: "Save Settings" },
+    // --- 【*** 新增結束 ***】 ---
+
     // 統計資料
     statsTitle: { zh: '遊玩紀錄', en: 'Game Stats' },
     statsCurrentStreak: { zh: '目前連勝', en: 'Current Streak' },

@@ -23,7 +23,7 @@
 
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen font-sans py-10">
 
-    <div x-data="sudokuGame()" x-init="loadStats(); checkForUpdates(); setDocTitle()"
+    <div x-data="sudokuGame()" x-init="loadStats(); checkForUpdates(); setDocTitle(); loadSettings()"
           @keydown.window="handleKeydown($event)"
           class="flex flex-col items-center px-4 w-full" >
 
@@ -39,13 +39,17 @@
            <div class="text-center">
                 <h1 class="text-5xl font-bold text-gray-800 mb-10" x-text="t('mainTitle')"></h1>
                 <h2 class="text-2xl font-semibold text-gray-700 mb-6" x-text="t('menuTitle')"></h2>
-                <div class="grid grid-cols-1 gap-4 w-64 mx-auto">
+                
+                <div class="grid grid-cols-1 gap-4 w-64">
                     <button @click="startGame('easy')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-500 text-white shadow-md hover:bg-blue-600 transition" x-text="t('diffEasy')"></button>
                     <button @click="startGame('medium')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition" x-text="t('diffMedium')"></button>
                     <button @click="startGame('hard')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-700 text-white shadow-md hover:bg-blue-800 transition" x-text="t('diffHard')"></button>
                     <button @click="startGame('very-hard')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-gray-600 text-white shadow-md hover:bg-gray-700 transition" x-text="t('diffVeryHard')"></button>
                     <button @click="startGame('insane')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-gray-800 text-white shadow-md hover:bg-black transition" x-text="t('diffInsane')"></button>
+                    
                     <button @click="toggleStats(true)" class="py-3 px-6 rounded-lg font-semibold text-lg bg-purple-600 text-white shadow-md hover:bg-purple-700 transition mt-8" x-text="t('statsButton')"></button>
+                    
+                    <button @click="toggleSettings(true)" class="py-3 px-6 rounded-lg font-semibold text-lg bg-gray-500 text-white shadow-md hover:bg-gray-600 transition" x-text="t('settingsButton')"></button>
                 </div>
             </div>
         </div>
@@ -95,7 +99,7 @@
                     <span x-text="t('errorLabel')"></span>
                     <span x-text="errorCount" class="font-bold text-red-600 w-8 text-left ml-1"></span>
                     <span> / </span>
-                    <span x-text="maxErrors" class="ml-1"></span>
+                    <span x-text="maxErrors >= 999 ? '∞' : maxErrors" class="ml-1"></span>
                 </div>
                 <button @click="pauseGame()" :title="t('pauseButtonHint')" class="py-2 px-4 rounded-lg font-semibold bg-white text-gray-700 shadow-md hover:bg-gray-50">
                     <span x-text="t('pauseButton')"></span><span class="hidden sm:inline"> (P) </span>
@@ -308,6 +312,69 @@
             </div>
         </div>
         
+        <div x-show="showSettings"
+             x-transition
+             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+             @click.self="toggleSettings(false)" 
+        >
+             <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md flex flex-col gap-6">
+                <div class="flex justify-between items-center border-b pb-3">
+                    <h2 class="text-2xl font-bold" x-text="t('settingsTitle')"></h2>
+                    <button @click="toggleSettings(false)" class="text-2xl font-bold text-gray-500 hover:text-gray-800">&times;</button>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-lg font-semibold mb-2" x-text="t('settingsMaxErrors')"></label>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center">
+                                <button @click="playerMaxErrors = Math.max(1, playerMaxErrors - 1)"
+                                        :disabled="playerErrorsUnlimited"
+                                        class="w-10 h-10 bg-gray-200 rounded-l font-bold text-xl hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">-</button>
+                                
+                                <input type="number" x-model.number="playerMaxErrors"
+                                       min="1" max="10"
+                                       class="w-16 h-10 p-2 border-t border-b text-center appearance-none [-moz-appearance:textfield]"
+                                       :disabled="playerErrorsUnlimited"
+                                       :class="{ 'bg-gray-100 text-gray-400': playerErrorsUnlimited }">
+                                
+                                <button @click="playerMaxErrors = Math.min(10, playerMaxErrors + 1)"
+                                        :disabled="playerErrorsUnlimited"
+                                        class="w-10 h-10 bg-gray-200 rounded-r font-bold text-xl hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">+</button>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="unlimitedErrors" x-model="playerErrorsUnlimited" class="h-5 w-5">
+                                <label for="unlimitedErrors" class="text-gray-700" x-text="t('settingsErrorUnlimited')"></label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="maxHintsInput" class="block text-lg font-semibold" x-text="t('settingsMaxHints')"></label>
+                        <p class="text-xs text-gray-500 mb-2" x-text="t('settingsHintsInfo')"></p>
+                        <div class="flex items-center">
+                            <button @click="playerMaxHints = Math.max(0, playerMaxHints - 1)"
+                                    class="w-10 h-10 bg-gray-200 rounded-l font-bold text-xl hover:bg-gray-300">-</button>
+                            
+                            <input type="number" id="maxHintsInput" x-model.number="playerMaxHints"
+                                   min="0" max="99"
+                                   class="w-16 h-10 p-2 border-t border-b text-center appearance-none [-moz-appearance:textfield]">
+                            
+                            <button @click="playerMaxHints = Math.min(99, playerMaxHints + 1)"
+                                    class="w-10 h-10 bg-gray-200 rounded-r font-bold text-xl hover:bg-gray-300">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t flex justify-end">
+                    <button @click="saveSettings()" 
+                            class="py-2 px-6 rounded-lg font-semibold text-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition"
+                            x-text="t('saveButton')">
+                    </button>
+                </div>
+             </div>
+        </div>
         <footer class="text-center text-gray-500 text-sm mt-8">
             <span x-text="t('versionLabel')"></span> <span x-text="version"></span>
             <div x-show="updateAvailable" class="mt-2">

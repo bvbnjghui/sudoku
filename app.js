@@ -44,15 +44,45 @@ function sudokuGame() {
         gameState: 'menu',
         showStats: false,
         showHintConfirm: false,
-        maxErrors: 5,
+        maxErrors: 3, // 遊戲中實際的錯誤上限
         relatedCells: [],
         highlightedNumberCells: [],
         hintsUsed: 0,
-        maxHints: 3,
-        version: '1.4.3',
+        maxHints: 3, // 遊戲中實際的提示上限
+        version: '1.4.4',
         remainingCounts: {}, 
         updateAvailable: false,
         registration: null,
+
+        // --- 【*** 新增：玩家設定 ***】 ---
+        showSettings: false,
+        playerMaxErrors: 3,
+        playerErrorsUnlimited: false,
+        playerMaxHints: 3,
+
+        // --- 【*** 新增：載入設定 ***】 ---
+        loadSettings() {
+            this.playerMaxErrors = localStorage.getItem('sudokuPlayerMaxErrors') ? parseInt(localStorage.getItem('sudokuPlayerMaxErrors')) : 3;
+            this.playerErrorsUnlimited = localStorage.getItem('sudokuPlayerErrorsUnlimited') === 'true';
+            this.playerMaxHints = localStorage.getItem('sudokuPlayerMaxHints') ? parseInt(localStorage.getItem('sudokuPlayerMaxHints')) : 3;
+        },
+
+        // --- 【*** 新增：開關設定彈窗 ***】 ---
+        toggleSettings(state) {
+            this.showSettings = state;
+            // 如果是關閉彈窗 (取消)，則重新載入設定，還原任何未儲存的變更
+            if (state === false) {
+                this.loadSettings(); 
+            }
+        },
+
+        // --- 【*** 新增：儲存設定 ***】 ---
+        saveSettings() {
+            localStorage.setItem('sudokuPlayerMaxErrors', this.playerMaxErrors);
+            localStorage.setItem('sudokuPlayerErrorsUnlimited', this.playerErrorsUnlimited);
+            localStorage.setItem('sudokuPlayerMaxHints', this.playerMaxHints);
+            this.toggleSettings(false); // 儲存後關閉
+        },
         
         getDefaultStats() { 
             return { currentStreak: 0, bestStreak: 0, levels: {'easy': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'medium': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'hard': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'very-hard': { played: 0, won: 0, bestTime: null, totalTime: 0 }, 'insane': { played: 0, won: 0, bestTime: null, totalTime: 0 }, }, recentGames: [] }
@@ -180,23 +210,29 @@ function sudokuGame() {
             this.clearHighlights(); this.startTimer(); 
             this.updateRemainingCounts();
         },
+
+        // --- 【*** 函數已修改 ***】 ---
         initGame() { 
             this.stats.levels[this.selectedDifficulty].played++;
             this.hintsUsed = 0; 
-            const hintMap = {
-                'easy': 2,
-                'medium': 2,
-                'hard': 3,
-                'very-hard': 4,
-                'insane': 5
-            };
-            this.maxHints = hintMap[this.selectedDifficulty] || 3; 
+            
+            // 【修改】
+            // 載入玩家的自訂設定來取代難度預設值
+            this.maxHints = this.playerMaxHints;
+            // 如果勾選無限制，給予 999 次錯誤，否則使用玩家設定
+            this.maxErrors = this.playerErrorsUnlimited ? 999 : this.playerMaxErrors;
+            
+            // 【移除】
+            // const hintMap = { ... };
+            // this.maxHints = hintMap[this.selectedDifficulty] || 3; 
 
             try {
                 this.currentPuzzleString = sudoku.generate(this.selectedDifficulty); this.currentSolutionString = sudoku.solve(this.currentPuzzleString);
                 this.buildBoard(); 
             } catch (e) { console.error("生成數獨時發生錯誤:", e); this.message = '載入謎題失敗，請重試。'; this.messageClass = 'text-red-600'; }
         },
+        // --- 【*** 修改結束 ***】 ---
+
         restartGame() {
              this.hintsUsed = 0; 
              this.buildBoard(); 
@@ -215,12 +251,8 @@ function sudokuGame() {
             }
             this.showHintConfirm = true;
         },
-
-        // --- 【*** 函數已修改 ***】 ---
         confirmUseHint() {
             this.showHintConfirm = false;
-
-            // 找到所有空的格子
             const emptyCells = [];
             for (let r = 0; r < 9; r++) {
                 for (let c = 0; c < 9; c++) {
@@ -229,29 +261,20 @@ function sudokuGame() {
                     }
                 }
             }
-
             if (emptyCells.length === 0) {
                 this.message = this.t('hintNoEmptyMsg');
                 this.messageClass = 'text-yellow-600';
                 setTimeout(() => { if (this.message === this.t('hintNoEmptyMsg')) { this.message = ''; this.messageClass = ''; } }, 2000);
                 return;
             }
-
-            // 隨機選擇一個空的格子
             const randomIndex = Math.floor(Math.random() * emptyCells.length);
             const { r, c } = emptyCells[randomIndex];
-
-            // 填入正確答案
             const index = r * 9 + c;
             const correctVal = parseInt(this.currentSolutionString[index]);
-
             this.board[r][c].value = correctVal;
             this.board[r][c].isLocked = true;
             this.board[r][c].notes = Array(9).fill(false);
-
             this.hintsUsed++;
-
-            // 清除 Peers 中衝突的筆記
             const peers = this.getPeers(r, c);
             peers.forEach(peer => {
                 const peerCell = this.board[peer.r][peer.c];
@@ -261,24 +284,16 @@ function sudokuGame() {
                     peerCell.notes = newNotes;
                 }
             });
-
             this.message = this.t('hintUsedMsg');
             this.messageClass = 'text-blue-600';
             setTimeout(() => { if (this.message === this.t('hintUsedMsg')) { this.message = ''; this.messageClass = ''; } }, 1500);
-
-            // 檢查棋盤是否已滿
             const isBoardFull = this.board.every(row => row.every(cell => cell.value !== 0));
             if (isBoardFull) {
                 this.checkSolution();
             }
-
             this.updateRemainingCounts(); 
-            
             this.handleCellClick(r, c); 
-            this.remainSelected();
         },
-        // --- 【*** 修改結束 ***】 ---
-
         cancelUseHint() {
             this.showHintConfirm = false;
         },
@@ -354,6 +369,10 @@ function sudokuGame() {
              if (event.key.toLowerCase() === 'p' && this.gameState === 'playing') { event.preventDefault(); this.pauseGame(); return; }
              if ((event.key === 'Escape' || event.key.toLowerCase() === 'p') && this.gameState === 'paused') { event.preventDefault(); this.resumeGame(); return; }
              if (event.key === 'Escape' && this.showStats) { event.preventDefault(); this.toggleStats(false); return; }
+             
+             // --- 【*** 新增 ***】 ---
+             if (event.key === 'Escape' && this.showSettings) { event.preventDefault(); this.toggleSettings(false); return; }
+
              if ((this.gameState === 'won' || this.gameState === 'gameOver') && event.key === 'Escape' && this.selectedCell) { this.selectedCell = null; this.clearHighlights(); return; } 
              if (this.gameState !== 'playing') return;
              if (event.key.toLowerCase() === 'n') { event.preventDefault(); this.isNoteMode = !this.isNoteMode; return; }
@@ -435,6 +454,9 @@ function sudokuGame() {
                         cell.isLocked = false;
                         cell.isError = true;
                         this.errorCount++;
+                        
+                        // 【*** 修改 ***】
+                        // 檢查的
                         if (this.errorCount >= this.maxErrors) {
                             this.stopTimer(); this.gameState = 'gameOver';
                             this.message = this.t('gameOverMsg');
