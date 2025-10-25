@@ -49,7 +49,7 @@ function sudokuGame() {
         highlightedNumberCells: [],
         hintsUsed: 0,
         maxHints: 3, // 遊戲中實際的提示上限
-        version: '1.4.4',
+        version: '1.4.5',
         remainingCounts: {}, 
         updateAvailable: false,
         registration: null,
