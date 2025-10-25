@@ -20,8 +20,8 @@ function sudokuGame() {
         relatedCells: [],
         highlightedNumberCells: [],
         hintsUsed: 0,
-        maxHints: 3,
-        version: '1.4.0',
+        maxHints: 3, // 預設值
+        version: '1.4.1',
         remainingCounts: {}, 
 
         // PWA 更新相關
@@ -159,15 +159,35 @@ function sudokuGame() {
             this.clearHighlights(); this.startTimer(); 
             this.updateRemainingCounts(); // --- 【修改】更新計數
         },
+        
+        // --- 【*** 函數已修改 ***】 ---
         initGame() { 
             this.stats.levels[this.selectedDifficulty].played++;
+
+            // 【Bug 修復】重置已使用提示次數 (用於"新遊戲")
+            this.hintsUsed = 0; 
+
+            // 【新功能 - 已修正】根據難度設定最大提示次數
+            const hintMap = {
+                'easy': 2,
+                'medium': 2,
+                'hard': 3,
+                'very-hard': 4,
+                'insane': 5
+            };
+            this.maxHints = hintMap[this.selectedDifficulty] || 3; // 預設為 3
+
             try {
                 this.currentPuzzleString = sudoku.generate(this.selectedDifficulty); this.currentSolutionString = sudoku.solve(this.currentPuzzleString);
                 this.buildBoard(); 
             } catch (e) { console.error("生成數獨時發生錯誤:", e); this.message = '載入謎題失敗，請重試。'; this.messageClass = 'text-red-600'; }
         },
+        // --- 【*** 修改結束 ***】 ---
+
         restartGame() {
-             this.hintsUsed = 0; this.buildBoard(); this.gameState = 'playing';
+             this.hintsUsed = 0; // <-- 這裡本來就有了，保留
+             this.buildBoard(); 
+             this.gameState = 'playing';
          },
 
         getRemainingHints() {
