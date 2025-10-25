@@ -2,6 +2,38 @@
 
 function sudokuGame() {
     return {
+        // --- 【*** 函數已修改 ***】 ---
+        // 從 localStorage 載入語言，若無則預設為 'zh'
+        currentLang: localStorage.getItem('sudokuLang') || 'zh', 
+        
+        // --- 從 translations.js 載入 ---
+        translations: translations, 
+        
+        // --- 翻譯函式 ---
+        t(key, replacements = {}) {
+            let str = (this.translations[key] && this.translations[key][this.currentLang]) || key;
+            for (const rKey in replacements) {
+                str = str.replace(`{${rKey}}`, replacements[rKey]);
+            }
+            return str;
+        },
+        
+        // --- 【*** 函數已修改 ***】 ---
+        toggleLang() {
+            this.currentLang = this.currentLang === 'zh' ? 'en' : 'zh';
+            
+            // 新增：將語言偏好儲存到 localStorage
+            localStorage.setItem('sudokuLang', this.currentLang);
+            
+            this.setDocTitle(); // 更新網頁標題
+        },
+
+        // --- 設定網頁標題 ---
+        setDocTitle() {
+            document.title = this.t('mainTitle');
+        },
+
+        // --- 既有屬性 ---
         currentPuzzleString: '',
         currentSolutionString: '',
         board: [],
@@ -20,11 +52,9 @@ function sudokuGame() {
         relatedCells: [],
         highlightedNumberCells: [],
         hintsUsed: 0,
-        maxHints: 3, // 預設值
-        version: '1.4.1',
+        maxHints: 3,
+        version: '1.4.0',
         remainingCounts: {}, 
-
-        // PWA 更新相關
         updateAvailable: false,
         registration: null,
         
@@ -33,12 +63,14 @@ function sudokuGame() {
         },
         stats: {}, 
 
-        // --- 統計與計時器函式 (不變) ---
         formatTime(seconds) { 
              if (seconds === null || typeof seconds === 'undefined') return 'N/A'; const mins = Math.floor(seconds / 60); const secs = Math.floor(seconds % 60); return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         },
         formatDate(isoString) { 
-            if (!isoString) return 'N/A'; const date = new Date(isoString); return date.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            if (!isoString) return 'N/A'; 
+            const date = new Date(isoString);
+            const locale = this.currentLang === 'zh' ? 'zh-TW' : 'en-US';
+            return date.toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' });
         },
         startTimer() { 
             if (this.timerInterval) return; this.timerInterval = setInterval(() => { this.timer++; }, 1000);
@@ -49,20 +81,14 @@ function sudokuGame() {
         loadStats() {
               const storedStats = localStorage.getItem('sudokuStats'); const defaultStats = this.getDefaultStats(); if (storedStats) { const parsedStats = JSON.parse(storedStats); this.stats = { ...defaultStats, ...parsedStats, levels: { ...defaultStats.levels, ...(parsedStats.levels || {}) }, recentGames: parsedStats.recentGames || [] }; } else { this.stats = defaultStats; }
         },
-
-        // 檢查 PWA 更新
         checkForUpdates() {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('sw.js')
                     .then(registration => {
                         this.registration = registration;
-
-                        // 檢查是否有新的 Service Worker 在等待
                         if (registration.waiting) {
                             this.updateAvailable = true;
                         }
-
-                        // 監聽新的 Service Worker 安裝完成
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', () => {
@@ -77,33 +103,27 @@ function sudokuGame() {
                     });
             }
         },
-
-        // 更新 PWA
         updatePWA() {
             if (this.registration && this.registration.waiting) {
                 this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                // 重新載入頁面以應用更新
                 window.location.reload();
             }
         },
-
-        // 確保選中的格子保持聚焦
         remainSelected() {
             if (this.selectedCell) {
                 this.setSelected(this.selectedCell.row, this.selectedCell.col);
             }
         },
-
-        // 將難度英文轉換為中文
+        
         getDifficultyText(difficulty) {
-            const difficultyMap = {
-                'easy': '簡單',
-                'medium': '中等',
-                'hard': '困難',
-                'very-hard': '極難',
-                'insane': '瘋狂'
+            const keyMap = {
+                'easy': 'diffEasy',
+                'medium': 'diffMedium',
+                'hard': 'diffHard',
+                'very-hard': 'diffVeryHard',
+                'insane': 'diffInsane'
             };
-            return difficultyMap[difficulty] || difficulty;
+            return this.t(keyMap[difficulty] || difficulty);
         },
         saveStats() { 
             localStorage.setItem('sudokuStats', JSON.stringify(this.stats));
@@ -112,13 +132,14 @@ function sudokuGame() {
              if (this.timer === 0 && status === 'lost') return; const gameRecord = { date: new Date().toISOString(), difficulty: this.selectedDifficulty, time: this.timer, status: status, errors: this.errorCount }; this.stats.recentGames.unshift(gameRecord); if (this.stats.recentGames.length > 10) this.stats.recentGames.pop(); 
         },
         clearStats() { 
-            if (confirm('你確定要清空所有遊玩紀錄嗎？此動作無法復原。')) { localStorage.removeItem('sudokuStats'); this.stats = this.getDefaultStats(); }
+            if (confirm(this.t('confirmClearStats'))) { 
+                localStorage.removeItem('sudokuStats'); 
+                this.stats = this.getDefaultStats(); 
+            }
         },
         toggleStats(state) { 
              this.showStats = state; if (state) { this.loadStats(); if (this.gameState === 'playing') this.stopTimer(); } else { if (this.gameState === 'playing') this.startTimer(); }
         },
-
-        // --- 【新增】計算剩餘數字 ---
         updateRemainingCounts() {
             const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
             for (let r = 0; r < 9; r++) {
@@ -135,10 +156,12 @@ function sudokuGame() {
             }
             this.remainingCounts = remaining;
         },
-        
-        // --- 遊戲流程函式 (不變) ---
         startGame(level) { 
-            this.selectedDifficulty = level; this.initGame(); this.gameState = 'playing'; this.showStats = false; 
+            this.selectedDifficulty = level; 
+            this.initGame(); 
+            this.gameState = 'playing'; 
+            this.showStats = false; 
+            this.setDocTitle();
         },
         pauseGame() { 
             if (this.gameState !== 'playing') return; this.stopTimer(); this.gameState = 'paused'; 
@@ -154,20 +177,16 @@ function sudokuGame() {
                 row.push(this.createCell(value, isGiven)); 
                 if ((i + 1) % 9 === 0) { newBoard.push(row); row = []; }
             }
-            this.board = newBoard; this.message = '遊戲開始！'; this.messageClass = 'text-blue-600';
+            this.board = newBoard; 
+            this.message = this.t('gameStartMsg');
+            this.messageClass = 'text-blue-600';
             this.isNoteMode = false; this.selectedCell = null; this.errorCount = 0; 
             this.clearHighlights(); this.startTimer(); 
-            this.updateRemainingCounts(); // --- 【修改】更新計數
+            this.updateRemainingCounts();
         },
-        
-        // --- 【*** 函數已修改 ***】 ---
         initGame() { 
             this.stats.levels[this.selectedDifficulty].played++;
-
-            // 【Bug 修復】重置已使用提示次數 (用於"新遊戲")
             this.hintsUsed = 0; 
-
-            // 【新功能 - 已修正】根據難度設定最大提示次數
             const hintMap = {
                 'easy': 2,
                 'medium': 2,
@@ -175,42 +194,33 @@ function sudokuGame() {
                 'very-hard': 4,
                 'insane': 5
             };
-            this.maxHints = hintMap[this.selectedDifficulty] || 3; // 預設為 3
+            this.maxHints = hintMap[this.selectedDifficulty] || 3; 
 
             try {
                 this.currentPuzzleString = sudoku.generate(this.selectedDifficulty); this.currentSolutionString = sudoku.solve(this.currentPuzzleString);
                 this.buildBoard(); 
             } catch (e) { console.error("生成數獨時發生錯誤:", e); this.message = '載入謎題失敗，請重試。'; this.messageClass = 'text-red-600'; }
         },
-        // --- 【*** 修改結束 ***】 ---
-
         restartGame() {
-             this.hintsUsed = 0; // <-- 這裡本來就有了，保留
+             this.hintsUsed = 0; 
              this.buildBoard(); 
              this.gameState = 'playing';
          },
-
         getRemainingHints() {
             return Math.max(0, this.maxHints - this.hintsUsed);
         },
-
         useHint() {
             if (this.gameState !== 'playing') return;
-
             if (this.getRemainingHints() <= 0) {
-                this.message = '提示次數已用完'; this.messageClass = 'text-red-600';
-                setTimeout(() => { if (this.message === '提示次數已用完') { this.message = ''; this.messageClass = ''; } }, 2000);
+                this.message = this.t('hintNoneLeftMsg');
+                this.messageClass = 'text-red-600';
+                setTimeout(() => { if (this.message === this.t('hintNoneLeftMsg')) { this.message = ''; this.messageClass = ''; } }, 2000);
                 return;
             }
-
-            // 顯示確認視窗
             this.showHintConfirm = true;
         },
-
         confirmUseHint() {
             this.showHintConfirm = false;
-
-            // 找到所有空的格子
             const emptyCells = [];
             for (let r = 0; r < 9; r++) {
                 for (let c = 0; c < 9; c++) {
@@ -219,28 +229,20 @@ function sudokuGame() {
                     }
                 }
             }
-
             if (emptyCells.length === 0) {
-                this.message = '沒有空的格子可以使用提示'; this.messageClass = 'text-yellow-600';
-                setTimeout(() => { if (this.message === '沒有空的格子可以使用提示') { this.message = ''; this.messageClass = ''; } }, 2000);
+                this.message = this.t('hintNoEmptyMsg');
+                this.messageClass = 'text-yellow-600';
+                setTimeout(() => { if (this.message === this.t('hintNoEmptyMsg')) { this.message = ''; this.messageClass = ''; } }, 2000);
                 return;
             }
-
-            // 隨機選擇一個空的格子
             const randomIndex = Math.floor(Math.random() * emptyCells.length);
             const { r, c } = emptyCells[randomIndex];
-
-            // 填入正確答案
             const index = r * 9 + c;
             const correctVal = parseInt(this.currentSolutionString[index]);
-
             this.board[r][c].value = correctVal;
             this.board[r][c].isLocked = true;
             this.board[r][c].notes = Array(9).fill(false);
-
             this.hintsUsed++;
-
-            // 清除 Peers 中衝突的筆記
             const peers = this.getPeers(r, c);
             peers.forEach(peer => {
                 const peerCell = this.board[peer.r][peer.c];
@@ -250,31 +252,25 @@ function sudokuGame() {
                     peerCell.notes = newNotes;
                 }
             });
-
-            this.message = `使用了提示！`; this.messageClass = 'text-blue-600';
-            setTimeout(() => { if (this.message === '使用了提示！') { this.message = ''; this.messageClass = ''; } }, 1500);
-
-            // 檢查棋盤是否已滿
+            this.message = this.t('hintUsedMsg');
+            this.messageClass = 'text-blue-600';
+            setTimeout(() => { if (this.message === this.t('hintUsedMsg')) { this.message = ''; this.messageClass = ''; } }, 1500);
             const isBoardFull = this.board.every(row => row.every(cell => cell.value !== 0));
             if (isBoardFull) {
                 this.checkSolution();
             }
-
             this.updateRemainingCounts(); 
             this.updateHighlightedNumberCells(r, c);
             this.remainSelected();
         },
-
         cancelUseHint() {
             this.showHintConfirm = false;
         },
         onNewGameClick() { 
              if (this.gameState === 'playing' || this.gameState === 'gameOver') { this.recordGame('lost'); this.stats.currentStreak = 0; }
              this.saveStats(); this.stopTimer(); this.gameState = 'menu'; this.showStats = false; 
+             this.setDocTitle();
         },
-        
-        // --- 核心邏輯修改 ---
-
         createCell(value, isGiven) {
             return {
                 value: value, 
@@ -284,7 +280,6 @@ function sudokuGame() {
                 notes: Array(9).fill(false) 
             }
         },
-
         updateRelatedCells(r, c) { 
             this.relatedCells = []; const relatedSet = new Set();
             for (let col = 0; col < 9; col++) relatedSet.add(`${r}-${col}`);
@@ -293,48 +288,30 @@ function sudokuGame() {
             for (let row = startRow; row < startRow + 3; row++) { for (let col = startCol; col < startCol + 3; col++) relatedSet.add(`${row}-${col}`); }
             relatedSet.forEach(coord => { const [rr, cc] = coord.split('-').map(Number); this.relatedCells.push({ r: rr, c: cc }); });
         },
-        
         clearHighlights() { 
             this.relatedCells = [];
             this.highlightedNumberCells = []; 
         },
-
         isRelated(r, c) { 
             if (this.gameState === 'menu' || this.gameState === 'paused') return false; 
             return this.relatedCells.some(cell => cell.r === r && cell.c === c);
         },
-        
         isHighlightedNumber(r, c) {
             if (this.gameState === 'menu' || this.gameState === 'paused') return false; 
             return this.highlightedNumberCells.some(cell => cell.r === r && cell.c === c);
         },
-
-        // --- 【新增】檢查筆記是否需要反白 ---
         isNoteHighlighted(n) {
-            // 只有在遊戲進行中且有選中格子時才檢查
             if (this.gameState !== 'playing' && this.gameState !== 'won') return false;
             if (!this.selectedCell) return false;
-
-            // 獲取選中格子的數字
             const selectedValue = this.board[this.selectedCell.row][this.selectedCell.col].value;
-            
-            // 如果選中的是空格子 (value=0)，則不反白任何筆記
             if (selectedValue === 0) return false;
-            
-            // 如果筆記數字 n 與選中的數字相同，則反白
             return n === selectedValue;
         },
-        // --- 【新增】結束 ---
-
         updateHighlightedNumberCells(r, c) {
             this.highlightedNumberCells = []; 
             if (!this.selectedCell || this.gameState === 'menu' || this.gameState === 'paused') return;
             const selectedValue = this.board[r][c].value;
-            
-            // 如果點擊的是空格 (value=0)，就清除反白並返回
             if (selectedValue === 0) return; 
-            
-            // 遍歷棋盤，只反白數字 (value) 相同的格子
             for (let rr = 0; rr < 9; rr++) {
                 for (let cc = 0; cc < 9; cc++) {
                     if (this.board[rr][cc].value === selectedValue) {
@@ -343,7 +320,6 @@ function sudokuGame() {
                 }
             }
         },
-        
         getPeers(r, c) {
             const peers = []; const peerSet = new Set();
             for (let col = 0; col < 9; col++) if (col !== c) peerSet.add(`${r}-${col}`);
@@ -353,15 +329,11 @@ function sudokuGame() {
             peerSet.forEach(coord => { const [rr, cc] = coord.split('-').map(Number); peers.push({ r: rr, c: cc }); });
             return peers;
         },
-
         hasNoteConflict(r, c, noteNum) { 
             const peers = this.getPeers(r, c);
             for (const peer of peers) { if (this.board[peer.r][peer.c].value !== 0 && this.board[peer.r][peer.c].value === noteNum) { return true; } }
             return false;
         },
-
-        // --- 修改後的 Input 和 Click 函式 ---
-
         handleKeydown(event) {
              if (event.key.toLowerCase() === 'p' && this.gameState === 'playing') { event.preventDefault(); this.pauseGame(); return; }
              if ((event.key === 'Escape' || event.key.toLowerCase() === 'p') && this.gameState === 'paused') { event.preventDefault(); this.resumeGame(); return; }
@@ -376,7 +348,6 @@ function sudokuGame() {
              if (event.key >= '1' && event.key <= '9') { event.preventDefault(); this.handleNumberInput(parseInt(event.key)); } 
              else if (event.key === '0' || event.key === 'Backspace' || event.key === 'Delete') { event.preventDefault(); this.handleNumberInput(0); }
         },
-        
         moveSelection(direction) { 
             if (this.gameState === 'menu' || this.gameState === 'paused' || !this.selectedCell) return;
             let { row, col } = this.selectedCell;
@@ -386,128 +357,115 @@ function sudokuGame() {
             if (direction === 'ArrowRight') col = Math.min(8, col + 1);
             this.selectedCell = { row, col }; this.updateRelatedCells(row, col); this.updateHighlightedNumberCells(row, col); 
         },
-        
         isSelected(r, c) { 
             return this.selectedCell && this.selectedCell.row === r && this.selectedCell.col === c;
         },
-
         handleCellClick(r, c) { 
             if (this.gameState === 'paused' || this.gameState === 'menu') { this.selectedCell = null; this.clearHighlights(); return; }
             this.selectedCell = { row: r, col: c }; this.updateRelatedCells(r, c); this.updateHighlightedNumberCells(r, c); 
         },
-
-        // 【修改】
         handleNumberInput(num) {
             if (this.gameState !== 'playing' || !this.selectedCell) return;
             const { row, col } = this.selectedCell;
             const cell = this.board[row][col];
-
             if (cell.isGiven || cell.isLocked) return;
-
             const oldValue = cell.value;
-
             if (this.isNoteMode) {
-                // --- 筆記模式 ---
                 if (num === 0) {
                     cell.notes = Array(9).fill(false);
                     if (oldValue !== 0) { cell.value = 0; cell.isError = false; }
                 } else {
                     if (this.hasNoteConflict(row, col, num)) {
-                        this.message = `筆記 ${num} 與已有數字衝突`; this.messageClass = 'text-orange-600';
-                        setTimeout(() => { if (this.message === `筆記 ${num} 與已有數字衝突`) { this.message = ''; this.messageClass = ''; } }, 1500);
+                        const msg = this.t('noteConflictMsg', {num: num});
+                        this.message = msg; this.messageClass = 'text-orange-600';
+                        setTimeout(() => { if (this.message === msg) { this.message = ''; this.messageClass = ''; } }, 1500);
                         this.remainSelected();
                         return;
                     }
                     const newNotes = [...cell.notes]; newNotes[num - 1] = !newNotes[num - 1]; cell.notes = newNotes;
                     if (oldValue !== 0) { cell.value = 0; cell.isError = false; }
                 }
-
             } else {
-                // --- 數字模式 ---
-                if (num === 0) { // Delete number
+                if (num === 0) { 
                     if (oldValue !== 0) { cell.value = 0; cell.isError = false; }
-                } else { // Enter number 1-9
+                } else { 
                     if (oldValue === num) return;
-
-                    // --- 【修改】檢查剩餘數量 ---
                     if (this.remainingCounts[num] === 0) {
-                        this.message = `數字 ${num} 已經放滿了`; this.messageClass = 'text-orange-600';
-                        setTimeout(() => { if (this.message === `數字 ${num} 已經放滿了`) { this.message = ''; this.messageClass = ''; } }, 1500);
+                        const msg = this.t('numFullMsg', {num: num});
+                        this.message = msg; this.messageClass = 'text-orange-600';
+                        setTimeout(() => { if (this.message === msg) { this.message = ''; this.messageClass = ''; } }, 1500);
                         this.remainSelected();
                         return;
                     }
-                    // --- 【修改】結束 ---
-
                     cell.value = num;
                     cell.notes = Array(9).fill(false);
-
                     const index = row * 9 + col;
                     const correctVal = parseInt(this.currentSolutionString[index]);
-
                     if (num === correctVal) {
-                        // --- 正確答案 ---
                         cell.isLocked = true;
                         cell.isError = false;
-
-                        // 【新增】清除 Peers 中衝突的筆記
                         const peers = this.getPeers(row, col);
                         peers.forEach(peer => {
                             const peerCell = this.board[peer.r][peer.c];
-                            if (peerCell.notes[num - 1]) { // 如果 peer 有這個數字的筆記
+                            if (peerCell.notes[num - 1]) { 
                                 const newNotes = [...peerCell.notes];
                                 newNotes[num - 1] = false;
                                 peerCell.notes = newNotes;
                             }
                         });
-
                     } else {
-                        // --- 錯誤答案 ---
                         cell.isLocked = false;
                         cell.isError = true;
                         this.errorCount++;
-
                         if (this.errorCount >= this.maxErrors) {
                             this.stopTimer(); this.gameState = 'gameOver';
-                            this.message = '錯誤次數過多，遊戲失敗！'; this.messageClass = 'text-red-600';
+                            this.message = this.t('gameOverMsg');
+                            this.messageClass = 'text-red-600';
                             this.recordGame('lost'); this.saveStats();
                             this.selectedCell = null; this.clearHighlights();
                             return;
                         }
                     }
                 }
-                // 檢查棋盤是否已滿
                 const isBoardFull = this.board.every(r => r.every(c => c.value !== 0));
                 if (isBoardFull) {
-                    this.checkSolution(); // 自動檢查
+                    this.checkSolution(); 
                 }
             }
-
             this.updateRemainingCounts(); 
             this.updateHighlightedNumberCells(row, col);
-
-            // 確保焦點回到當前選中的格子
             this.remainSelected();
         },
-        
-        // --- 檢查和解答函式 (不變) ---
         checkSolution() { 
             if (this.gameState === 'won' || this.gameState === 'gameOver') return; 
             if (this.gameState === 'playing') {
                 let isComplete = true; let hasErrors = false;
                 for (let r=0; r<9; r++) for (let c=0; c<9; c++) if (!this.board[r][c].isGiven && !this.board[r][c].isLocked) this.board[r][c].isError = false; 
                 for (let r = 0; r < 9; r++) { for (let c = 0; c < 9; c++) { const cell = this.board[r][c]; const index = r * 9 + c; const correctVal = parseInt(this.currentSolutionString[index]); if (!cell.isLocked && cell.value === 0) isComplete = false; else if (!cell.isLocked && cell.value !== correctVal) { hasErrors = true; cell.isError = true; } } }
-                if (isComplete && !hasErrors) { this.stopTimer(); this.gameState = 'won'; this.message = `恭喜你！完成時間 ${this.formatTime(this.timer)}`; this.messageClass = 'text-green-600'; this.selectedCell = null; this.clearHighlights(); const stats = this.stats.levels[this.selectedDifficulty]; stats.won++; stats.totalTime += this.timer; if (stats.bestTime === null || this.timer < stats.bestTime) stats.bestTime = this.timer; this.stats.currentStreak++; if (this.stats.currentStreak > this.stats.bestStreak) this.stats.bestStreak = this.stats.currentStreak; this.recordGame('won'); this.saveStats(); } 
-                else if (isComplete && hasErrors) { this.message = '已完成，但仍有錯誤。'; this.messageClass = 'text-red-600'; } 
-                else { for (let r=0; r<9; r++) for (let c=0; c<9; c++) if (!this.board[r][c].isGiven && !this.board[r][c].isLocked) this.board[r][c].isError = false; this.message = '尚未完成，請繼續。'; this.messageClass = 'text-yellow-600'; }
+                
+                if (isComplete && !hasErrors) { 
+                    this.stopTimer(); this.gameState = 'won'; 
+                    this.message = this.t('gameWonMsg', {time: this.formatTime(this.timer)}); 
+                    this.messageClass = 'text-green-600'; this.selectedCell = null; this.clearHighlights(); const stats = this.stats.levels[this.selectedDifficulty]; stats.won++; stats.totalTime += this.timer; if (stats.bestTime === null || this.timer < stats.bestTime) stats.bestTime = this.timer; this.stats.currentStreak++; if (this.stats.currentStreak > this.stats.bestStreak) this.stats.bestStreak = this.stats.currentStreak; this.recordGame('won'); this.saveStats(); 
+                } 
+                else if (isComplete && hasErrors) { 
+                    this.message = this.t('gameCheckDoneErrors'); 
+                    this.messageClass = 'text-red-600'; 
+                } 
+                else { 
+                    for (let r=0; r<9; r++) for (let c=0; c<9; c++) if (!this.board[r][c].isGiven && !this.board[r][c].isLocked) this.board[r][c].isError = false; 
+                    this.message = this.t('gameCheckNotDone'); 
+                    this.messageClass = 'text-yellow-600'; 
+                }
             }
          },
         showSolution() { 
              this.stopTimer(); if (this.gameState === 'playing') { this.recordGame('lost'); this.stats.currentStreak = 0; this.saveStats(); } this.gameState = 'gameOver'; this.clearHighlights(); 
              for (let r = 0; r < 9; r++) { for (let c = 0; c < 9; c++) { const index = r * 9 + c; const solutionVal = parseInt(this.currentSolutionString[index]); const isGiven = (this.currentPuzzleString[index] !== '.'); this.board[r][c].value = solutionVal; this.board[r][c].isGiven = isGiven; this.board[r][c].isError = false; this.board[r][c].notes = Array(9).fill(false); this.board[r][c].isLocked = true; } }
              this.updateRemainingCounts(); 
-             this.message = '已顯示解答。'; this.messageClass = 'text-blue-600';
+             this.message = this.t('showSolutionMsg');
+             this.messageClass = 'text-blue-600';
         },
-
         setSelected(row, col){
             setTimeout(() => {
                 const selectedElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" :lang="currentLang.startsWith('en') ? 'en' : 'zh-Hant'">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,57 +16,97 @@
     <link rel="stylesheet" href="style.css">
     
     <script defer src="sudoku.js"></script>
+    <script defer src="translations.js"></script>
     <script defer src="app.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen font-sans py-10">
 
-    <div x-data="sudokuGame()" x-init="loadStats(); checkForUpdates()"
+    <div x-data="sudokuGame()" x-init="loadStats(); checkForUpdates(); setDocTitle()"
           @keydown.window="handleKeydown($event)"
           class="flex flex-col items-center px-4 w-full" >
 
         <div x-show="gameState === 'menu'" 
              x-transition 
              class="fixed inset-0 bg-gray-100 flex items-center justify-center p-4 z-40">
-           <div class="text-center"> <h1 class="text-5xl font-bold text-gray-800 mb-10">數獨遊戲</h1> <h2 class="text-2xl font-semibold text-gray-700 mb-6">請選擇難度</h2> <div class="grid grid-cols-1 gap-4 w-64"> <button @click="startGame('easy')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-500 text-white shadow-md hover:bg-blue-600 transition">簡單</button> <button @click="startGame('medium')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition">中等</button> <button @click="startGame('hard')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-700 text-white shadow-md hover:bg-blue-800 transition">困難</button> <button @click="startGame('very-hard')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-gray-600 text-white shadow-md hover:bg-gray-700 transition">極難</button> <button @click="startGame('insane')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-gray-800 text-white shadow-md hover:bg-black transition">瘋狂</button> <button @click="toggleStats(true)" class="py-3 px-6 rounded-lg font-semibold text-lg bg-purple-600 text-white shadow-md hover:bg-purple-700 transition mt-8"> 查看遊玩紀錄 </button> </div> </div>
+           
+           <button @click="toggleLang()" 
+                   class="absolute top-4 right-4 py-2 px-4 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition" 
+                   x-text="t('langToggle')">
+           </button>
+
+           <div class="text-center">
+                <h1 class="text-5xl font-bold text-gray-800 mb-10" x-text="t('mainTitle')"></h1>
+                <h2 class="text-2xl font-semibold text-gray-700 mb-6" x-text="t('menuTitle')"></h2>
+                <div class="grid grid-cols-1 gap-4 w-64 mx-auto">
+                    <button @click="startGame('easy')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-500 text-white shadow-md hover:bg-blue-600 transition" x-text="t('diffEasy')"></button>
+                    <button @click="startGame('medium')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition" x-text="t('diffMedium')"></button>
+                    <button @click="startGame('hard')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-blue-700 text-white shadow-md hover:bg-blue-800 transition" x-text="t('diffHard')"></button>
+                    <button @click="startGame('very-hard')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-gray-600 text-white shadow-md hover:bg-gray-700 transition" x-text="t('diffVeryHard')"></button>
+                    <button @click="startGame('insane')" class="py-3 px-6 rounded-lg font-semibold text-lg bg-gray-800 text-white shadow-md hover:bg-black transition" x-text="t('diffInsane')"></button>
+                    <button @click="toggleStats(true)" class="py-3 px-6 rounded-lg font-semibold text-lg bg-purple-600 text-white shadow-md hover:bg-purple-700 transition mt-8" x-text="t('statsButton')"></button>
+                </div>
+            </div>
         </div>
 
         <div x-show="gameState === 'paused'"
              x-transition
              class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-40"
              @click.self="resumeGame()">
-            <div class="text-center"> <h2 class="text-5xl font-bold text-white mb-8">已暫停</h2> <button @click="resumeGame()" class="py-3 px-10 rounded-lg font-semibold text-2xl bg-white text-blue-600 shadow-md hover:bg-gray-100 transition"> 繼續遊戲 </button> </div>
+            <div class="text-center">
+                <h2 class="text-5xl font-bold text-white mb-8" x-text="t('pausedTitle')"></h2>
+                <button @click="resumeGame()" class="py-3 px-10 rounded-lg font-semibold text-2xl bg-white text-blue-600 shadow-md hover:bg-gray-100 transition" x-text="t('resumeButton')"></button>
+            </div>
         </div>
 
         <div x-show="showHintConfirm"
              x-transition
              class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-40"
              @click.self="cancelUseHint()">
-            <div class="text-center"> <h2 class="text-3xl font-bold text-white mb-6">確定要使用提示嗎？</h2> <div class="flex gap-4 justify-center"> <button @click="confirmUseHint()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition"> 確定 </button> <button @click="cancelUseHint()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-gray-600 text-white shadow-md hover:bg-gray-700 transition"> 取消 </button> </div> </div>
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-white mb-6" x-text="t('hintConfirmTitle')"></h2>
+                <div class="flex gap-4 justify-center">
+                    <button @click="confirmUseHint()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition" x-text="t('confirmButton')"></button>
+                    <button @click="cancelUseHint()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-gray-600 text-white shadow-md hover:bg-gray-700 transition" x-text="t('cancelButton')"></button>
+                </div>
+            </div>
         </div>
         
         <div x-show="gameState === 'gameOver'"
              x-transition
              class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-40">
-             <div class="bg-white rounded-lg shadow-xl p-8 text-center"> <h2 class="text-3xl font-bold text-red-600 mb-4">遊戲失敗</h2> <p class="text-lg text-gray-700 mb-6" x-text="message"></p> <div class="flex gap-4 justify-center"> <button @click="restartGame()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition"> 重開遊戲 </button> <button @click="onNewGameClick()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition"> 返回選單 </button> </div> </div>
+             <div class="bg-white rounded-lg shadow-xl p-8 text-center">
+                <h2 class="text-3xl font-bold text-red-600 mb-4" x-text="t('gameOverTitle')"></h2>
+                <p class="text-lg text-gray-700 mb-6" x-text="message"></p>
+                <div class="flex gap-4 justify-center">
+                    <button @click="restartGame()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition" x-text="t('restartGameButton')"></button>
+                    <button @click="onNewGameClick()" class="py-2 px-6 rounded-lg font-semibold text-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition" x-text="t('newGameButton')"></button>
+                </div>
+            </div>
         </div>
 
 
-        <div x-show="gameState !== 'menu'" class="flex flex-col items-center w-full max-w-lg"> <h1 class="text-4xl font-bold text-gray-800 mb-4">數獨遊戲</h1>
+        <div x-show="gameState !== 'menu'" class="flex flex-col items-center w-full max-w-lg">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4" x-text="t('mainTitle')"></h1>
 
-            <div class="flex justify-between items-center w-full mb-4 text-lg"> <div class="flex">
-                    <span>錯誤: </span>
+            <div class="flex justify-between items-center w-full mb-4 text-lg">
+                <div class="flex">
+                    <span x-text="t('errorLabel')"></span>
                     <span x-text="errorCount" class="font-bold text-red-600 w-8 text-left ml-1"></span>
                     <span> / </span>
                     <span x-text="maxErrors" class="ml-1"></span>
                 </div>
-                <button @click="pauseGame()" title="暫停 (P)" class="py-2 px-4 rounded-lg font-semibold bg-white text-gray-700 shadow-md hover:bg-gray-50"> 暫停<span class="hidden sm:inline"> (P) </span></button>
+                <button @click="pauseGame()" :title="t('pauseButtonHint')" class="py-2 px-4 rounded-lg font-semibold bg-white text-gray-700 shadow-md hover:bg-gray-50">
+                    <span x-text="t('pauseButton')"></span><span class="hidden sm:inline"> (P) </span>
+                </button>
                 <div class="flex">
-                    <span>時間: </span>
+                    <span x-text="t('timeLabel')"></span>
                     <span x-text="formatTime(timer)" class="font-bold text-blue-600 w-16 text-right ml-2"></span>
                 </div>
-            </div> <script>
+            </div>
+            
+            <script>
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                   navigator.serviceWorker.register('sw.js')
@@ -134,10 +174,16 @@
             </div>
             
             <div class="flex gap-2 mt-6">
-                <button @click="handleNumberInput(0)" title="刪除 (Backspace/Delete)" class="py-2 px-4 rounded-lg font-semibold bg-white text-red-500 shadow-md hover:bg-red-50"> 刪除 </button>
-                <button @click="useHint()" title="提示" class="py-2 px-4 rounded-lg font-semibold" :class="getRemainingHints() > 0 ? 'bg-yellow-500 text-white shadow-md hover:bg-yellow-600' : 'bg-gray-400 text-gray-600 cursor-not-allowed'"> 提示 (<span x-text="getRemainingHints()"></span>) </button>
-                <button @click="isNoteMode = false; remainSelected()" title="數字 (N)" class="py-2 px-4 rounded-lg font-semibold" :class="!isNoteMode ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'"> 數字<span class="hidden sm:inline"> (N) </span></button>
-                <button @click="isNoteMode = true; remainSelected()" title="筆記 (N)" class="py-2 px-4 rounded-lg font-semibold" :class="isNoteMode ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'"> 筆記<span class="hidden sm:inline"> (N) </span></button>
+                <button @click="handleNumberInput(0)" :title="t('deleteButtonHint')" class="py-2 px-4 rounded-lg font-semibold bg-white text-red-500 shadow-md hover:bg-red-50" x-text="t('deleteButton')"></button>
+                <button @click="useHint()" :title="t('hintButton')" class="py-2 px-4 rounded-lg font-semibold" :class="getRemainingHints() > 0 ? 'bg-yellow-500 text-white shadow-md hover:bg-yellow-600' : 'bg-gray-400 text-gray-600 cursor-not-allowed'">
+                    <span x-text="t('hintButton')"></span> (<span x-text="getRemainingHints()"></span>)
+                </button>
+                <button @click="isNoteMode = false; remainSelected()" :title="t('numberButtonHint')" class="py-2 px-4 rounded-lg font-semibold" :class="!isNoteMode ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'">
+                    <span x-text="t('numberButton')"></span><span class="hidden sm:inline"> (N) </span>
+                </button>
+                <button @click="isNoteMode = true; remainSelected()" :title="t('noteButtonHint')" class="py-2 px-4 rounded-lg font-semibold" :class="isNoteMode ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'">
+                    <span x-text="t('noteButton')"></span><span class="hidden sm:inline"> (N) </span>
+                </button>
             </div>
 
             <div class="flex flex-row flex-wrap justify-center gap-2 mt-4">
@@ -165,31 +211,107 @@
 
 
             <div class="flex flex-wrap justify-center gap-4 mt-6">
-                <button @click="toggleStats(true)" class="py-2 px-5 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition"> 遊玩紀錄 </button>
-                <button @click="restartGame()" class="py-2 px-5 bg-orange-500 text-white font-semibold rounded-lg shadow-md hover:bg-orange-600 transition"> 重啟遊戲 </button>
-                <button @click="onNewGameClick()" class="py-2 px-5 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition"> 新遊戲 </button>
+                <button @click="toggleStats(true)" class="py-2 px-5 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition" x-text="t('statsButton')"></button>
+                <button @click="restartGame()" class="py-2 px-5 bg-orange-500 text-white font-semibold rounded-lg shadow-md hover:bg-orange-600 transition" x-text="t('restartGameButton')"></button>
+                <button @click="onNewGameClick()" class="py-2 px-5 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition" x-text="t('newGameButton')"></button>
                 </div>
 
             <div class="h-8 mt-4"> <p class="text-xl font-bold" x-text="message" :class="messageClass"></p> </div>
 
-        </div> <div x-show="showStats" 
+        </div>
+        
+        <div x-show="showStats" 
              x-transition
              class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
              @click.self="toggleStats(false)" 
         >
-             <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col"> <div class="flex justify-between items-center border-b pb-3 mb-4 flex-shrink-0"> <h2 class="text-2xl font-bold">遊玩紀錄</h2> <button @click="toggleStats(false)" class="text-2xl font-bold text-gray-500 hover:text-gray-800">&times;</button> </div> <div class="overflow-y-auto"> <div class="grid grid-cols-2 gap-4 text-center mb-4"> <div class="bg-gray-100 p-3 rounded-lg"> <div class="text-sm text-gray-600">目前連勝</div> <div class="text-3xl font-bold" x-text="stats.currentStreak"></div> </div> <div class="bg-gray-100 p-3 rounded-lg"> <div class="text-sm text-gray-600">最佳連勝</div> <div class="text-3xl font-bold" x-text="stats.bestStreak"></div> </div> </div> <div class="overflow-x-auto"> <table class="w-full text-left"> <thead> <tr class="bg-gray-50"> <th class="p-3 font-semibold text-sm">難度</th> <th class="p-3 font-semibold text-sm">遊玩場次</th> <th class="p-3 font-semibold text-sm">勝場</th> <th class="p-3 font-semibold text-sm">勝率</th> <th class="p-3 font-semibold text-sm">最佳時間</th> <th class="p-3 font-semibold text-sm">平均時間</th> </tr> </thead> <tbody class="divide-y"> <template x-for="level in Object.keys(stats.levels)" :key="level"> <tr> <td class="p-3" x-text="getDifficultyText(level)"></td> <td class="p-3" x-text="stats.levels[level].played"></td> <td class="p-3" x-text="stats.levels[level].won"></td> <td class="p-3" x-text="stats.levels[level].played > 0 ? (stats.levels[level].won / stats.levels[level].played * 100).toFixed(0) + '%' : 'N/A'"></td> <td class="p-3" x-text="stats.levels[level].bestTime ? formatTime(stats.levels[level].bestTime) : 'N/A'"></td> <td class="p-3" x-text="stats.levels[level].won > 0 ? formatTime(stats.levels[level].totalTime / stats.levels[level].won) : 'N/A'"></td> </tr> </template> </tbody> </table> </div> <h3 class="text-xl font-bold mt-6 mb-3">最近 10 局</h3> <div class="overflow-y-auto max-h-60 border rounded-lg"> <table class="w-full text-left"> <thead class="sticky top-0 bg-gray-100"> <tr> <th class="p-3 font-semibold text-sm">日期</th> <th class="p-3 font-semibold text-sm">難度</th> <th class="p-3 font-semibold text-sm">狀態</th> <th class="p-3 font-semibold text-sm">時間</th> <th class="p-3 font-semibold text-sm">錯誤</th> </tr> </thead> <tbody class="divide-y"> <template x-if="stats.recentGames.length === 0"> <tr> <td colspan="5" class="p-4 text-center text-gray-500">尚無紀錄</td> </tr> </template> <template x-for="(game, index) in stats.recentGames" :key="index"> <tr> <td class="p-3 text-sm" x-text="formatDate(game.date)"></td> <td class="p-3" x-text="getDifficultyText(game.difficulty)"></td> <td class="p-3"> 
-                                
-                                <span x-text="game.status === 'won' ? '勝利' : '失敗'" :class="game.status === 'won' ? 'text-green-600 font-semibold' : 'text-red-600'">
-                                </span> 
-
-                            </td> <td class="p-3" x-text="formatTime(game.time)"></td> <td class="p-3" x-text="game.errors"></td> </tr> </template> </tbody> </table> </div> <div class="mt-6 pt-4 border-t flex justify-end"> <button @click="clearStats()" class="py-2 px-4 rounded-lg font-semibold text-sm bg-red-600 text-white hover:bg-red-700 transition"> 清空所有紀錄 </button> </div> </div> </div>
+             <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
+                <div class="flex justify-between items-center border-b pb-3 mb-4 flex-shrink-0">
+                    <h2 class="text-2xl font-bold" x-text="t('statsTitle')"></h2>
+                    <button @click="toggleStats(false)" class="text-2xl font-bold text-gray-500 hover:text-gray-800">&times;</button>
+                </div>
+                <div class="overflow-y-auto">
+                    <div class="grid grid-cols-2 gap-4 text-center mb-4">
+                        <div class="bg-gray-100 p-3 rounded-lg">
+                            <div class="text-sm text-gray-600" x-text="t('statsCurrentStreak')"></div>
+                            <div class="text-3xl font-bold" x-text="stats.currentStreak"></div>
+                        </div>
+                        <div class="bg-gray-100 p-3 rounded-lg">
+                            <div class="text-sm text-gray-600" x-text="t('statsBestStreak')"></div>
+                            <div class="text-3xl font-bold" x-text="stats.bestStreak"></div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsDifficulty')"></th>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsPlayed')"></th>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsWon')"></th>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsWinRate')"></th>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsBestTime')"></th>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsAvgTime')"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                <template x-for="level in Object.keys(stats.levels)" :key="level">
+                                    <tr>
+                                        <td class="p-3" x-text="getDifficultyText(level)"></td>
+                                        <td class="p-3" x-text="stats.levels[level].played"></td>
+                                        <td class="p-3" x-text="stats.levels[level].won"></td>
+                                        <td class="p-3" x-text="stats.levels[level].played > 0 ? (stats.levels[level].won / stats.levels[level].played * 100).toFixed(0) + '%' : 'N/A'"></td>
+                                        <td class="p-3" x-text="stats.levels[level].bestTime ? formatTime(stats.levels[level].bestTime) : 'N/A'"></td>
+                                        <td class="p-3" x-text="stats.levels[level].won > 0 ? formatTime(stats.levels[level].totalTime / stats.levels[level].won) : 'N/A'"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <h3 class="text-xl font-bold mt-6 mb-3" x-text="t('statsRecentGames')"></h3>
+                    <div class="overflow-y-auto max-h-60 border rounded-lg">
+                        <table class="w-full text-left">
+                            <thead class="sticky top-0 bg-gray-100">
+                                <tr>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsDate')"></th>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsDifficulty')"></th>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsStatus')"></th>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsTime')"></th>
+                                    <th class="p-3 font-semibold text-sm" x-text="t('statsErrors')"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                <template x-if="stats.recentGames.length === 0">
+                                    <tr>
+                                        <td colspan="5" class="p-4 text-center text-gray-500" x-text="t('statsNoRecord')"></td>
+                                    </tr>
+                                </template>
+                                <template x-for="(game, index) in stats.recentGames" :key="index">
+                                    <tr>
+                                        <td class="p-3 text-sm" x-text="formatDate(game.date)"></td>
+                                        <td class="p-3" x-text="getDifficultyText(game.difficulty)"></td>
+                                        <td class="p-3">
+                                            <span x-text="game.status === 'won' ? t('statsStatusWon') : t('statsStatusLost')" 
+                                                  :class="game.status === 'won' ? 'text-green-600 font-semibold' : 'text-red-600'">
+                                            </span>
+                                        </td>
+                                        <td class="p-3" x-text="formatTime(game.time)"></td>
+                                        <td class="p-3" x-text="game.errors"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-6 pt-4 border-t flex justify-end">
+                        <button @click="clearStats()" class="py-2 px-4 rounded-lg font-semibold text-sm bg-red-600 text-white hover:bg-red-700 transition" x-text="t('statsClearButton')"></button>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <footer class="text-center text-gray-500 text-sm mt-8">
-            版本 <span x-text="version"></span>
+            <span x-text="t('versionLabel')"></span> <span x-text="version"></span>
             <div x-show="updateAvailable" class="mt-2">
-                <button @click="updatePWA()" class="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 transition">
-                    有新版本可用，點擊更新
+                <button @click="updatePWA()" class="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 transition" x-text="t('updateAvailable')">
                 </button>
             </div>
         </footer>
