@@ -2,8 +2,7 @@
 
 function sudokuGame() {
     return {
-        // --- 【*** 函數已修改 ***】 ---
-        // 從 localStorage 載入語言，若無則預設為 'zh'
+        // --- 語言狀態 ---
         currentLang: localStorage.getItem('sudokuLang') || 'zh', 
         
         // --- 從 translations.js 載入 ---
@@ -18,14 +17,11 @@ function sudokuGame() {
             return str;
         },
         
-        // --- 【*** 函數已修改 ***】 ---
+        // --- 切換語言函式 ---
         toggleLang() {
             this.currentLang = this.currentLang === 'zh' ? 'en' : 'zh';
-            
-            // 新增：將語言偏好儲存到 localStorage
             localStorage.setItem('sudokuLang', this.currentLang);
-            
-            this.setDocTitle(); // 更新網頁標題
+            this.setDocTitle(); 
         },
 
         // --- 設定網頁標題 ---
@@ -53,7 +49,7 @@ function sudokuGame() {
         highlightedNumberCells: [],
         hintsUsed: 0,
         maxHints: 3,
-        version: '1.4.2',
+        version: '1.4.3',
         remainingCounts: {}, 
         updateAvailable: false,
         registration: null,
@@ -219,8 +215,12 @@ function sudokuGame() {
             }
             this.showHintConfirm = true;
         },
+
+        // --- 【*** 函數已修改 ***】 ---
         confirmUseHint() {
             this.showHintConfirm = false;
+
+            // 找到所有空的格子
             const emptyCells = [];
             for (let r = 0; r < 9; r++) {
                 for (let c = 0; c < 9; c++) {
@@ -229,20 +229,29 @@ function sudokuGame() {
                     }
                 }
             }
+
             if (emptyCells.length === 0) {
                 this.message = this.t('hintNoEmptyMsg');
                 this.messageClass = 'text-yellow-600';
                 setTimeout(() => { if (this.message === this.t('hintNoEmptyMsg')) { this.message = ''; this.messageClass = ''; } }, 2000);
                 return;
             }
+
+            // 隨機選擇一個空的格子
             const randomIndex = Math.floor(Math.random() * emptyCells.length);
             const { r, c } = emptyCells[randomIndex];
+
+            // 填入正確答案
             const index = r * 9 + c;
             const correctVal = parseInt(this.currentSolutionString[index]);
+
             this.board[r][c].value = correctVal;
             this.board[r][c].isLocked = true;
             this.board[r][c].notes = Array(9).fill(false);
+
             this.hintsUsed++;
+
+            // 清除 Peers 中衝突的筆記
             const peers = this.getPeers(r, c);
             peers.forEach(peer => {
                 const peerCell = this.board[peer.r][peer.c];
@@ -252,17 +261,24 @@ function sudokuGame() {
                     peerCell.notes = newNotes;
                 }
             });
+
             this.message = this.t('hintUsedMsg');
             this.messageClass = 'text-blue-600';
             setTimeout(() => { if (this.message === this.t('hintUsedMsg')) { this.message = ''; this.messageClass = ''; } }, 1500);
+
+            // 檢查棋盤是否已滿
             const isBoardFull = this.board.every(row => row.every(cell => cell.value !== 0));
             if (isBoardFull) {
                 this.checkSolution();
             }
+
             this.updateRemainingCounts(); 
-            this.updateHighlightedNumberCells(r, c);
+            
+            this.handleCellClick(r, c); 
             this.remainSelected();
         },
+        // --- 【*** 修改結束 ***】 ---
+
         cancelUseHint() {
             this.showHintConfirm = false;
         },
@@ -362,7 +378,9 @@ function sudokuGame() {
         },
         handleCellClick(r, c) { 
             if (this.gameState === 'paused' || this.gameState === 'menu') { this.selectedCell = null; this.clearHighlights(); return; }
-            this.selectedCell = { row: r, col: c }; this.updateRelatedCells(r, c); this.updateHighlightedNumberCells(r, c); 
+            this.selectedCell = { row: r, col: c }; 
+            this.updateRelatedCells(r, c); 
+            this.updateHighlightedNumberCells(r, c); 
         },
         handleNumberInput(num) {
             if (this.gameState !== 'playing' || !this.selectedCell) return;
