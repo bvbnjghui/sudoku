@@ -49,7 +49,7 @@ function sudokuGame() {
         highlightedNumberCells: [],
         hintsUsed: 0,
         maxHints: 3, // 遊戲中實際的提示上限
-        version: '1.4.7',
+        version: '1.4.8',
         remainingCounts: {}, 
         updateAvailable: false,
         registration: null,
@@ -290,6 +290,7 @@ function sudokuGame() {
             }
             this.updateRemainingCounts(); 
             this.handleCellClick(r, c); 
+            this.remainSelected();
         },
         cancelUseHint() {
             this.showHintConfirm = false;
